@@ -1,9 +1,12 @@
-import { Image } from "expo-image";
+import { useCreatePost } from "@/hooks/useCreatePost";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -17,17 +20,38 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const MOCK_IMAGE = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80";
-
 export default function CreatePostScreen() {
   const router = useRouter();
+  const { pickImage, takePhoto, createPostWithImage, isUploading } =
+    useCreatePost();
   const [caption, setCaption] = useState("");
-  const [imageUri, setImageUri] = useState<string | null>(MOCK_IMAGE);
+  const [imageUri, setImageUri] = useState<string | null>(null);
 
-  const handlePickImage = () => {
-    // TODO: integrate image picker or camera
-    if (!imageUri) {
-      setImageUri(MOCK_IMAGE);
+  const handlePickImage = async () => {
+    try {
+      const image = await pickImage();
+      if (image) {
+        setImageUri(image.uri);
+      }
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "Failed to pick image"
+      );
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      const photo = await takePhoto();
+      if (photo) {
+        setImageUri(photo.uri);
+      }
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "Failed to take photo"
+      );
     }
   };
 
@@ -35,8 +59,22 @@ export default function CreatePostScreen() {
     setImageUri(null);
   };
 
-  const handlePublish = () => {
-    // TODO: implement post creation and navigate back to feed
+  const handlePublish = async () => {
+    if (!caption && !imageUri) {
+      Alert.alert("Error", "Please add a caption or image");
+      return;
+    }
+
+    try {
+      await createPostWithImage(caption || undefined, imageUri || undefined);
+      Alert.alert("Success", "Post created successfully!");
+      router.back();
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "Failed to create post"
+      );
+    }
   };
 
   return (
@@ -66,34 +104,61 @@ export default function CreatePostScreen() {
                 style={({ pressed }) => [
                   styles.publishButton,
                   pressed && styles.publishButtonPressed,
+                  isUploading && styles.publishButtonDisabled,
                 ]}
                 onPress={handlePublish}
+                disabled={isUploading}
               >
-                <Text style={styles.publishText}>Post</Text>
+                {isUploading ? (
+                  <ActivityIndicator color="#050505" size="small" />
+                ) : (
+                  <Text style={styles.publishText}>Post</Text>
+                )}
               </Pressable>
             </View>
 
             <View style={styles.mediaSection}>
               {imageUri ? (
                 <View style={styles.mediaPreview}>
-                  <Image source={{ uri: imageUri }} style={styles.previewImage} contentFit="cover" />
-                  <Pressable style={styles.removeButton} onPress={handleRemoveImage} hitSlop={6}>
+                  <Image
+                    source={{ uri: imageUri }}
+                    style={styles.previewImage}
+                    contentFit="cover"
+                  />
+                  <Pressable
+                    style={styles.removeButton}
+                    onPress={handleRemoveImage}
+                    hitSlop={6}
+                  >
                     <Ionicons name="close" size={18} color="#0f0f0f" />
                   </Pressable>
                 </View>
               ) : (
-                <Pressable style={styles.mediaPlaceholder} onPress={handlePickImage}>
+                <Pressable
+                  style={styles.mediaPlaceholder}
+                  onPress={handlePickImage}
+                >
                   <Ionicons name="image" size={32} color="#b5b5b5" />
-                  <Text style={styles.placeholderText}>Tap to add photo or video</Text>
+                  <Text style={styles.placeholderText}>
+                    Tap to add photo or video
+                  </Text>
                 </Pressable>
               )}
 
               <View style={styles.mediaActions}>
-                <Pressable style={styles.actionPill} onPress={handlePickImage}>
+                <Pressable
+                  style={styles.actionPill}
+                  onPress={handlePickImage}
+                  disabled={isUploading}
+                >
                   <Ionicons name="image-outline" size={18} color="#ffffff" />
                   <Text style={styles.actionPillText}>Gallery</Text>
                 </Pressable>
-                <Pressable style={styles.actionPill} onPress={handlePickImage}>
+                <Pressable
+                  style={styles.actionPill}
+                  onPress={handleTakePhoto}
+                  disabled={isUploading}
+                >
                   <Ionicons name="camera-outline" size={18} color="#ffffff" />
                   <Text style={styles.actionPillText}>Camera</Text>
                 </Pressable>
@@ -165,6 +230,9 @@ const styles = StyleSheet.create({
   },
   publishButtonPressed: {
     opacity: 0.85,
+  },
+  publishButtonDisabled: {
+    opacity: 0.6,
   },
   publishText: {
     color: "#050505",

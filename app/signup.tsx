@@ -5,7 +5,6 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -15,7 +14,7 @@ import {
   Text,
   TextInput,
   TouchableWithoutFeedback,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -26,24 +25,69 @@ export default function SignUpScreen() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [usernameError, setUsernameError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [generalError, setGeneralError] = useState("");
+
+  const validateName = (value: string) => {
+    setName(value);
+    setNameError("");
+    setGeneralError("");
+  };
+
+  const validateUsername = (value: string) => {
+    setUsername(value);
+    setUsernameError("");
+    setGeneralError("");
+  };
+
+  const validateEmail = (value: string) => {
+    setEmail(value);
+    setEmailError("");
+    setGeneralError("");
+  };
+
+  const validatePassword = (value: string) => {
+    setPassword(value);
+    setPasswordError("");
+    setGeneralError("");
+  };
 
   const handleSignUp = async () => {
-    if (!name || !username || !email || !password) {
-      Alert.alert("Error", "Please fill in all fields");
-      return;
+    let hasError = false;
+
+    if (!name) {
+      setNameError("Full name is required");
+      hasError = true;
     }
 
-    if (password.length < 8) {
-      Alert.alert("Error", "Password must be at least 8 characters long");
-      return;
+    if (!username) {
+      setUsernameError("Username is required");
+      hasError = true;
     }
+
+    if (!email) {
+      setEmailError("Email is required");
+      hasError = true;
+    }
+
+    if (!password) {
+      setPasswordError("Password is required");
+      hasError = true;
+    } else if (password.length < 8) {
+      setPasswordError("Password must be at least 8 characters long");
+      hasError = true;
+    }
+
+    if (hasError) return;
 
     try {
       await signUp(email, password, name, username);
       router.replace("/home");
     } catch (error) {
-      Alert.alert(
-        "Sign Up Failed",
+      setGeneralError(
         error instanceof Error ? error.message : "Could not create account"
       );
     }
@@ -84,71 +128,88 @@ export default function SignUpScreen() {
               </View>
 
               <View style={styles.form}>
+                {generalError ? (
+                  <View style={styles.errorBanner}>
+                    <Text style={styles.errorBannerText}>{generalError}</Text>
+                  </View>
+                ) : null}
+
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Full name</Text>
                   <TextInput
                     value={name}
-                    onChangeText={setName}
+                    onChangeText={validateName}
                     placeholder="Ayo Johnson"
                     placeholderTextColor="#8a8a8a"
-                    style={styles.input}
+                    style={[styles.input, nameError && styles.inputError]}
                     selectionColor="#ffffff"
                     autoCapitalize="words"
                     returnKeyType="next"
                     textContentType="name"
                   />
+                  {nameError ? (
+                    <Text style={styles.errorText}>{nameError}</Text>
+                  ) : null}
                 </View>
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Username</Text>
                   <TextInput
                     value={username}
-                    onChangeText={setUsername}
-                    placeholder="@ayo_frames"
+                    onChangeText={validateUsername}
+                    placeholder="ayo_frames"
                     placeholderTextColor="#8a8a8a"
-                    style={styles.input}
+                    style={[styles.input, usernameError && styles.inputError]}
                     selectionColor="#ffffff"
                     autoCapitalize="none"
                     returnKeyType="next"
                   />
-                  <Text style={styles.helperText}>
-                    Optional — helps friends find you faster.
-                  </Text>
+                  {usernameError ? (
+                    <Text style={styles.errorText}>{usernameError}</Text>
+                  ) : null}
                 </View>
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Email</Text>
                   <TextInput
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={validateEmail}
                     autoCapitalize="none"
                     autoComplete="email"
                     keyboardType="email-address"
                     placeholder="you@example.com"
                     placeholderTextColor="#8a8a8a"
-                    style={styles.input}
+                    style={[styles.input, emailError && styles.inputError]}
                     selectionColor="#ffffff"
                     returnKeyType="next"
                     textContentType="emailAddress"
                   />
+                  {emailError ? (
+                    <Text style={styles.errorText}>{emailError}</Text>
+                  ) : null}
                 </View>
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Password</Text>
                   <TextInput
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={validatePassword}
                     placeholder="Create a password"
                     placeholderTextColor="#8a8a8a"
                     secureTextEntry
-                    style={styles.input}
+                    style={[styles.input, passwordError && styles.inputError]}
                     selectionColor="#ffffff"
                     returnKeyType="done"
                     textContentType="newPassword"
+                    onSubmitEditing={handleSignUp}
                   />
-                  <Text style={styles.helperText}>
-                    Must be at least 8 characters long.
-                  </Text>
+                  {passwordError ? (
+                    <Text style={styles.errorText}>{passwordError}</Text>
+                  ) : (
+                    <Text style={styles.helperText}>
+                      Must be at least 8 characters long.
+                    </Text>
+                  )}
                 </View>
 
                 <Pressable
@@ -245,9 +306,30 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 16,
   },
+  inputError: {
+    borderWidth: 1,
+    borderColor: "#ff453a",
+  },
   helperText: {
     color: "#8a8a8a",
     fontSize: 12,
+  },
+  errorText: {
+    color: "#ff453a",
+    fontSize: 12,
+    marginTop: -4,
+  },
+  errorBanner: {
+    backgroundColor: "rgba(255, 69, 58, 0.1)",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 69, 58, 0.3)",
+  },
+  errorBannerText: {
+    color: "#ff453a",
+    fontSize: 14,
+    textAlign: "center",
   },
   signupButton: {
     backgroundColor: "#34c759",

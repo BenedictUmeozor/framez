@@ -5,7 +5,6 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -15,7 +14,7 @@ import {
   Text,
   TextInput,
   TouchableWithoutFeedback,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -24,19 +23,42 @@ export default function LoginScreen() {
   const { signIn, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [generalError, setGeneralError] = useState("");
+
+  const validateEmail = (value: string) => {
+    setEmail(value);
+    setEmailError("");
+    setGeneralError("");
+  };
+
+  const validatePassword = (value: string) => {
+    setPassword(value);
+    setPasswordError("");
+    setGeneralError("");
+  };
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Please enter both email and password");
-      return;
+    let hasError = false;
+
+    if (!email) {
+      setEmailError("Email is required");
+      hasError = true;
     }
+
+    if (!password) {
+      setPasswordError("Password is required");
+      hasError = true;
+    }
+
+    if (hasError) return;
 
     try {
       await signIn(email, password);
       router.replace("/home");
     } catch (error) {
-      Alert.alert(
-        "Login Failed",
+      setGeneralError(
         error instanceof Error ? error.message : "Invalid email or password"
       );
     }
@@ -77,36 +99,49 @@ export default function LoginScreen() {
               </View>
 
               <View style={styles.form}>
+                {generalError ? (
+                  <View style={styles.errorBanner}>
+                    <Text style={styles.errorBannerText}>{generalError}</Text>
+                  </View>
+                ) : null}
+
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Email</Text>
                   <TextInput
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={validateEmail}
                     autoCapitalize="none"
                     autoComplete="email"
                     keyboardType="email-address"
                     placeholder="you@example.com"
                     placeholderTextColor="#8a8a8a"
-                    style={styles.input}
+                    style={[styles.input, emailError && styles.inputError]}
                     selectionColor="#ffffff"
                     returnKeyType="next"
                     textContentType="emailAddress"
                   />
+                  {emailError ? (
+                    <Text style={styles.errorText}>{emailError}</Text>
+                  ) : null}
                 </View>
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Password</Text>
                   <TextInput
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={validatePassword}
                     placeholder="••••••••"
                     placeholderTextColor="#8a8a8a"
                     secureTextEntry
-                    style={styles.input}
+                    style={[styles.input, passwordError && styles.inputError]}
                     selectionColor="#ffffff"
                     returnKeyType="done"
                     textContentType="password"
+                    onSubmitEditing={handleLogin}
                   />
+                  {passwordError ? (
+                    <Text style={styles.errorText}>{passwordError}</Text>
+                  ) : null}
                 </View>
 
                 <Pressable style={styles.forgotButton} onPress={() => {}}>
@@ -205,6 +240,27 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     color: "#ffffff",
     fontSize: 16,
+  },
+  inputError: {
+    borderWidth: 1,
+    borderColor: "#ff453a",
+  },
+  errorText: {
+    color: "#ff453a",
+    fontSize: 12,
+    marginTop: -4,
+  },
+  errorBanner: {
+    backgroundColor: "rgba(255, 69, 58, 0.1)",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 69, 58, 0.3)",
+  },
+  errorBannerText: {
+    color: "#ff453a",
+    fontSize: 14,
+    textAlign: "center",
   },
   forgotButton: {
     alignSelf: "flex-end",

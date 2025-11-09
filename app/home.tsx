@@ -103,8 +103,12 @@ export default function HomeScreen() {
       <StatusBar style="light" />
       <View style={styles.header}>
         <Text style={styles.logoText}>Framez</Text>
-        <Pressable style={styles.headerIcon} hitSlop={8}>
-          <Ionicons name="notifications-outline" size={22} color="#ffffff" />
+        <Pressable
+          style={styles.headerIcon}
+          hitSlop={8}
+          onPress={() => router.push({ pathname: "/profile" })}
+        >
+          <Ionicons name="person-circle-outline" size={22} color="#ffffff" />
         </Pressable>
       </View>
 

@@ -9,6 +9,7 @@ export default function RootLayout() {
       <Stack.Screen name="home" />
       <Stack.Screen name="create-post" />
       <Stack.Screen name="post-details" />
+      <Stack.Screen name="profile" />
     </Stack>
   );
 }

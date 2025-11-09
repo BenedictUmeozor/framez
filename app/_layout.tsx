@@ -3,6 +3,7 @@ import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ConvexReactClient } from "convex/react";
 import { Stack } from "expo-router";
+import Toast from "react-native-toast-message";
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
@@ -37,6 +38,7 @@ export default function RootLayout() {
           <Stack.Screen name="settings" />
           <Stack.Screen name="other-profile" />
         </Stack>
+        <Toast />
       </AuthProvider>
     </ConvexAuthProvider>
   );

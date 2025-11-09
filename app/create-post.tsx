@@ -6,7 +6,6 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -19,6 +18,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 export default function CreatePostScreen() {
   const router = useRouter();
@@ -34,10 +34,11 @@ export default function CreatePostScreen() {
         setImageUri(image.uri);
       }
     } catch (error) {
-      Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "Failed to pick image"
-      );
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: error instanceof Error ? error.message : "Failed to pick image",
+      });
     }
   };
 
@@ -48,10 +49,11 @@ export default function CreatePostScreen() {
         setImageUri(photo.uri);
       }
     } catch (error) {
-      Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "Failed to take photo"
-      );
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: error instanceof Error ? error.message : "Failed to take photo",
+      });
     }
   };
 
@@ -61,19 +63,28 @@ export default function CreatePostScreen() {
 
   const handlePublish = async () => {
     if (!caption && !imageUri) {
-      Alert.alert("Error", "Please add a caption or image");
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Please add a caption or image",
+      });
       return;
     }
 
     try {
       await createPostWithImage(caption || undefined, imageUri || undefined);
-      Alert.alert("Success", "Post created successfully!");
+      Toast.show({
+        type: "success",
+        text1: "Success",
+        text2: "Post created successfully!",
+      });
       router.back();
     } catch (error) {
-      Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "Failed to create post"
-      );
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: error instanceof Error ? error.message : "Failed to create post",
+      });
     }
   };
 

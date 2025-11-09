@@ -1,8 +1,10 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/convex/_generated/api";
+import { useQuery } from "convex/react";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Keyboard,
@@ -14,7 +16,7 @@ import {
   Text,
   TextInput,
   TouchableWithoutFeedback,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -30,6 +32,16 @@ export default function SignUpScreen() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [generalError, setGeneralError] = useState("");
+
+  // Real-time availability checks
+  const usernameCheck = useQuery(
+    api.users.checkUsernameAvailable,
+    username.length >= 3 ? { username } : "skip"
+  );
+  const emailCheck = useQuery(
+    api.users.checkEmailAvailable,
+    email.includes("@") ? { email } : "skip"
+  );
 
   const validateName = (value: string) => {
     setName(value);
@@ -49,10 +61,29 @@ export default function SignUpScreen() {
     setGeneralError("");
   };
 
+  // Update username error based on real-time check
+  useEffect(() => {
+    if (username.length >= 3 && usernameCheck && !usernameCheck.available) {
+      setUsernameError(usernameCheck.message);
+    }
+  }, [usernameCheck, username]);
+
+  // Update email error based on real-time check
+  useEffect(() => {
+    if (email.includes("@") && emailCheck && !emailCheck.available) {
+      setEmailError(emailCheck.message);
+    }
+  }, [emailCheck, email]);
+
   const validatePassword = (value: string) => {
     setPassword(value);
     setPasswordError("");
     setGeneralError("");
+  };
+
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   const handleSignUp = async () => {
@@ -70,6 +101,9 @@ export default function SignUpScreen() {
 
     if (!email) {
       setEmailError("Email is required");
+      hasError = true;
+    } else if (!isValidEmail(email)) {
+      setEmailError("Please enter a valid email address");
       hasError = true;
     }
 
@@ -122,7 +156,8 @@ export default function SignUpScreen() {
                 <View style={styles.titleBlock}>
                   <Text style={styles.title}>Create your account</Text>
                   <Text style={styles.subtitle}>
-                    Join Framez to capture, share, and discover inspiring visuals.
+                    Join Framez to capture, share, and discover inspiring
+                    visuals.
                   </Text>
                 </View>
               </View>
@@ -159,13 +194,23 @@ export default function SignUpScreen() {
                     onChangeText={validateUsername}
                     placeholder="ayo_frames"
                     placeholderTextColor="#8a8a8a"
-                    style={[styles.input, usernameError && styles.inputError]}
+                    style={[
+                      styles.input,
+                      usernameError && styles.inputError,
+                      username.length >= 3 &&
+                        usernameCheck?.available &&
+                        styles.inputSuccess,
+                    ]}
                     selectionColor="#ffffff"
                     autoCapitalize="none"
                     returnKeyType="next"
                   />
                   {usernameError ? (
                     <Text style={styles.errorText}>{usernameError}</Text>
+                  ) : username.length >= 3 && usernameCheck?.available ? (
+                    <Text style={styles.successText}>
+                      {usernameCheck.message}
+                    </Text>
                   ) : null}
                 </View>
 
@@ -179,13 +224,21 @@ export default function SignUpScreen() {
                     keyboardType="email-address"
                     placeholder="you@example.com"
                     placeholderTextColor="#8a8a8a"
-                    style={[styles.input, emailError && styles.inputError]}
+                    style={[
+                      styles.input,
+                      emailError && styles.inputError,
+                      email.includes("@") &&
+                        emailCheck?.available &&
+                        styles.inputSuccess,
+                    ]}
                     selectionColor="#ffffff"
                     returnKeyType="next"
                     textContentType="emailAddress"
                   />
                   {emailError ? (
                     <Text style={styles.errorText}>{emailError}</Text>
+                  ) : email.includes("@") && emailCheck?.available ? (
+                    <Text style={styles.successText}>{emailCheck.message}</Text>
                   ) : null}
                 </View>
 
@@ -310,12 +363,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ff453a",
   },
+  inputSuccess: {
+    borderWidth: 1,
+    borderColor: "#34c759",
+  },
   helperText: {
     color: "#8a8a8a",
     fontSize: 12,
   },
   errorText: {
     color: "#ff453a",
+    fontSize: 12,
+    marginTop: -4,
+  },
+  successText: {
+    color: "#34c759",
     fontSize: 12,
     marginTop: -4,
   },

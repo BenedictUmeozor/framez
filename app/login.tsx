@@ -39,11 +39,19 @@ export default function LoginScreen() {
     setGeneralError("");
   };
 
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleLogin = async () => {
     let hasError = false;
 
     if (!email) {
       setEmailError("Email is required");
+      hasError = true;
+    } else if (!isValidEmail(email)) {
+      setEmailError("Please enter a valid email address");
       hasError = true;
     }
 

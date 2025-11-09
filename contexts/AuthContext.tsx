@@ -75,13 +75,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       formData.append("flow", "signIn");
 
       await convexSignIn("password", formData);
-      
+
       // Store auth token
       await AsyncStorage.setItem(AUTH_TOKEN_KEY, "authenticated");
     } catch (error) {
-      console.error("Sign in error:", error);
-      setAuthError(error instanceof Error ? error.message : "Sign in failed");
-      throw error;
+      // Parse error message for better user feedback
+      let errorMessage = "Invalid email or password";
+      
+      if (error instanceof Error) {
+        const message = error.message.toLowerCase();
+        if (message.includes("invalidaccountid") || message.includes("invalid")) {
+          errorMessage = "Invalid email or password";
+        } else if (message.includes("network")) {
+          errorMessage = "Network error. Please check your connection";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setAuthError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -114,9 +127,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Store auth token
       await AsyncStorage.setItem(AUTH_TOKEN_KEY, "authenticated");
     } catch (error) {
-      console.error("Sign up error:", error);
-      setAuthError(error instanceof Error ? error.message : "Sign up failed");
-      throw error;
+      // Parse error message for better user feedback
+      let errorMessage = "Could not create account";
+      
+      if (error instanceof Error) {
+        const message = error.message.toLowerCase();
+        if (message.includes("already exists") || message.includes("duplicate")) {
+          errorMessage = "An account with this email already exists";
+        } else if (message.includes("username already taken")) {
+          errorMessage = "Username already taken";
+        } else if (message.includes("network")) {
+          errorMessage = "Network error. Please check your connection";
+        } else if (!message.includes("convex") && !message.includes("request id")) {
+          errorMessage = error.message;
+        }
+      }
+      
+      setAuthError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
     }

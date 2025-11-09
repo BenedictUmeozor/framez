@@ -1,6 +1,6 @@
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
-import { auth } from "./auth";
 
 /**
  * Get current authenticated user
@@ -8,12 +8,12 @@ import { auth } from "./auth";
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
       return null;
     }
     
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db.get(identity.subject as Id<"users">);
     return user;
   },
 });
@@ -30,10 +30,12 @@ export const createOrUpdateUser = mutation({
     bio: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
       throw new Error("Not authenticated");
     }
+    
+    const userId = identity.subject as Id<"users">;
 
     // Check if username is already taken by another user
     const existingUser = await ctx.db
@@ -84,6 +86,46 @@ export const getUserByUsername = query({
 });
 
 /**
+ * Check if username is available
+ */
+export const checkUsernameAvailable = query({
+  args: { username: v.string() },
+  handler: async (ctx, args) => {
+    if (!args.username || args.username.length < 3) {
+      return { available: false, message: "Username must be at least 3 characters" };
+    }
+
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("by_username", (q) => q.eq("username", args.username))
+      .first();
+
+    return {
+      available: !existingUser,
+      message: existingUser ? "Username already taken" : "Username available",
+    };
+  },
+});
+
+/**
+ * Check if email is available
+ */
+export const checkEmailAvailable = query({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", args.email))
+      .first();
+
+    return {
+      available: !existingUser,
+      message: existingUser ? "Email already registered" : "Email available",
+    };
+  },
+});
+
+/**
  * Update user profile
  */
 export const updateProfile = mutation({
@@ -94,10 +136,12 @@ export const updateProfile = mutation({
     bio: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
       throw new Error("Not authenticated");
     }
+    
+    const userId = identity.subject as Id<"users">;
 
     // If username is being updated, check if it's available
     if (args.username) {

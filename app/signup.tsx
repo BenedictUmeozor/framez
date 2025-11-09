@@ -32,102 +32,113 @@ export default function SignUpScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <StatusBar style="light" />
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.select({ ios: "padding", android: undefined })}
-        >
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoider}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={32}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <ScrollView
             contentContainerStyle={styles.scrollContent}
-            bounces={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.header}>
-              <Image
-                source={require("../assets/images/splash-icon.png")}
-                style={styles.logo}
-                contentFit="contain"
-              />
-              <View style={styles.titleBlock}>
-                <Text style={styles.title}>Create your account</Text>
-                <Text style={styles.subtitle}>
-                  Join Framez to capture, share, and discover inspiring visuals.
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.form}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Full name</Text>
-                <TextInput
-                  value={name}
-                  onChangeText={setName}
-                  placeholder="Ayo Johnson"
-                  placeholderTextColor="#8a8a8a"
-                  style={styles.input}
-                  selectionColor="#ffffff"
-                  autoCapitalize="words"
+            <View style={styles.mainContent}>
+              <View style={styles.header}>
+                <Image
+                  source={require("../assets/images/splash-icon.png")}
+                  style={styles.logo}
+                  contentFit="contain"
                 />
+                <View style={styles.titleBlock}>
+                  <Text style={styles.title}>Create your account</Text>
+                  <Text style={styles.subtitle}>
+                    Join Framez to capture, share, and discover inspiring visuals.
+                  </Text>
+                </View>
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Username</Text>
-                <TextInput
-                  value={username}
-                  onChangeText={setUsername}
-                  placeholder="@ayo_frames"
-                  placeholderTextColor="#8a8a8a"
-                  style={styles.input}
-                  selectionColor="#ffffff"
-                  autoCapitalize="none"
-                />
-                <Text style={styles.helperText}>
-                  Optional — helps friends find you faster.
-                </Text>
-              </View>
+              <View style={styles.form}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Full name</Text>
+                  <TextInput
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Ayo Johnson"
+                    placeholderTextColor="#8a8a8a"
+                    style={styles.input}
+                    selectionColor="#ffffff"
+                    autoCapitalize="words"
+                    returnKeyType="next"
+                    textContentType="name"
+                  />
+                </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  keyboardType="email-address"
-                  placeholder="you@example.com"
-                  placeholderTextColor="#8a8a8a"
-                  style={styles.input}
-                  selectionColor="#ffffff"
-                />
-              </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Username</Text>
+                  <TextInput
+                    value={username}
+                    onChangeText={setUsername}
+                    placeholder="@ayo_frames"
+                    placeholderTextColor="#8a8a8a"
+                    style={styles.input}
+                    selectionColor="#ffffff"
+                    autoCapitalize="none"
+                    returnKeyType="next"
+                  />
+                  <Text style={styles.helperText}>
+                    Optional — helps friends find you faster.
+                  </Text>
+                </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Password</Text>
-                <TextInput
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Create a password"
-                  placeholderTextColor="#8a8a8a"
-                  secureTextEntry
-                  style={styles.input}
-                  selectionColor="#ffffff"
-                />
-                <Text style={styles.helperText}>
-                  Must be at least 8 characters long.
-                </Text>
-              </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Email</Text>
+                  <TextInput
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    keyboardType="email-address"
+                    placeholder="you@example.com"
+                    placeholderTextColor="#8a8a8a"
+                    style={styles.input}
+                    selectionColor="#ffffff"
+                    returnKeyType="next"
+                    textContentType="emailAddress"
+                  />
+                </View>
 
-              <Pressable
-                style={({ pressed }) => [
-                  styles.signupButton,
-                  pressed && styles.signupButtonPressed,
-                ]}
-                onPress={handleSignUp}
-              >
-                <Text style={styles.signupText}>Create account</Text>
-              </Pressable>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Password</Text>
+                  <TextInput
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Create a password"
+                    placeholderTextColor="#8a8a8a"
+                    secureTextEntry
+                    style={styles.input}
+                    selectionColor="#ffffff"
+                    returnKeyType="done"
+                    textContentType="newPassword"
+                  />
+                  <Text style={styles.helperText}>
+                    Must be at least 8 characters long.
+                  </Text>
+                </View>
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.signupButton,
+                    pressed && styles.signupButtonPressed,
+                  ]}
+                  onPress={handleSignUp}
+                >
+                  <Text style={styles.signupText}>Create account</Text>
+                </Pressable>
+              </View>
             </View>
 
             <View style={styles.footer}>
@@ -137,8 +148,8 @@ export default function SignUpScreen() {
               </Pressable>
             </View>
           </ScrollView>
-        </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -148,12 +159,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#050505",
   },
-  container: {
+  keyboardAvoider: {
     flex: 1,
   },
   scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
     paddingVertical: 32,
+    gap: 32,
+  },
+  mainContent: {
+    flexGrow: 1,
     gap: 32,
   },
   header: {

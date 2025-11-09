@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -29,78 +30,93 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <StatusBar style="light" />
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.select({ ios: "padding", android: undefined })}>
-          <View style={styles.header}>
-            <Image
-              source={require("../assets/images/splash-icon.png")}
-              style={styles.logo}
-              contentFit="contain"
-            />
-            <View style={styles.titleBlock}>
-              <Text style={styles.title}>Welcome back</Text>
-              <Text style={styles.subtitle}>
-                Log in to continue sharing your latest captures.
-              </Text>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoider}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={32}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.mainContent}>
+              <View style={styles.header}>
+                <Image
+                  source={require("../assets/images/splash-icon.png")}
+                  style={styles.logo}
+                  contentFit="contain"
+                />
+                <View style={styles.titleBlock}>
+                  <Text style={styles.title}>Welcome back</Text>
+                  <Text style={styles.subtitle}>
+                    Log in to continue sharing your latest captures.
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.form}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Email</Text>
+                  <TextInput
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    keyboardType="email-address"
+                    placeholder="you@example.com"
+                    placeholderTextColor="#8a8a8a"
+                    style={styles.input}
+                    selectionColor="#ffffff"
+                    returnKeyType="next"
+                    textContentType="emailAddress"
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Password</Text>
+                  <TextInput
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="••••••••"
+                    placeholderTextColor="#8a8a8a"
+                    secureTextEntry
+                    style={styles.input}
+                    selectionColor="#ffffff"
+                    returnKeyType="done"
+                    textContentType="password"
+                  />
+                </View>
+
+                <Pressable style={styles.forgotButton} onPress={() => {}}>
+                  <Text style={styles.forgotText}>Forgot password?</Text>
+                </Pressable>
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.loginButton,
+                    pressed && styles.loginButtonPressed,
+                  ]}
+                  onPress={handleLogin}
+                >
+                  <Text style={styles.loginText}>Log in</Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
 
-          <View style={styles.form}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                autoComplete="email"
-                keyboardType="email-address"
-                placeholder="you@example.com"
-                placeholderTextColor="#8a8a8a"
-                style={styles.input}
-                selectionColor="#ffffff"
-              />
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Don’t have an account?</Text>
+              <Pressable hitSlop={8} onPress={goToSignup}>
+                <Text style={styles.footerLink}>Sign up</Text>
+              </Pressable>
             </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="••••••••"
-                placeholderTextColor="#8a8a8a"
-                secureTextEntry
-                style={styles.input}
-                selectionColor="#ffffff"
-              />
-            </View>
-
-            <Pressable style={styles.forgotButton} onPress={() => {}}>
-              <Text style={styles.forgotText}>Forgot password?</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.loginButton,
-                pressed && styles.loginButtonPressed,
-              ]}
-              onPress={handleLogin}
-            >
-              <Text style={styles.loginText}>Log in</Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Don’t have an account?</Text>
-            <Pressable hitSlop={8} onPress={goToSignup}>
-              <Text style={styles.footerLink}>Sign up</Text>
-            </Pressable>
-          </View>
-        </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -110,10 +126,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#050505",
   },
-  container: {
+  keyboardAvoider: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
     paddingVertical: 32,
+    gap: 32,
+  },
+  mainContent: {
+    flexGrow: 1,
     gap: 32,
   },
   header: {

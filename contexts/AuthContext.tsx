@@ -117,18 +117,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       await convexSignIn("password", formData);
 
-      // Wait a bit for Convex Auth to create the user document
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Create user profile
-      await createOrUpdateUser({
-        name,
-        username,
-        email,
-      });
-
       // Store auth token
       await AsyncStorage.setItem(AUTH_TOKEN_KEY, "authenticated");
+
+      // Update user profile after successful signup
+      // We'll retry a few times in case the user document isn't ready yet
+      let retries = 0;
+      const maxRetries = 3;
+      
+      while (retries < maxRetries) {
+        try {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          await createOrUpdateUser({
+            name,
+            username,
+            email,
+          });
+          break; // Success, exit loop
+        } catch (err) {
+          retries++;
+          if (retries >= maxRetries) {
+            // If we can't update the profile, that's okay - they can do it later
+            console.warn("Could not update profile immediately:", err);
+          }
+        }
+      }
     } catch (error) {
       // Parse error message for better user feedback
       let errorMessage = "Could not create account";

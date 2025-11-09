@@ -45,17 +45,8 @@ export const createOrUpdateUser = mutation({
       throw new Error("Username already taken");
     }
 
-    // Try to get the user document
-    let user = await ctx.db.get(userId);
-    let retries = 0;
-    const maxRetries = 5;
-    
-    // Retry logic in case user document is still being created
-    while (!user && retries < maxRetries) {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      user = await ctx.db.get(userId);
-      retries++;
-    }
+    // Get the user document
+    const user = await ctx.db.get(userId);
     
     if (user) {
       // Update existing user profile
@@ -69,8 +60,9 @@ export const createOrUpdateUser = mutation({
         followingCount: user.followingCount ?? 0,
       });
     } else {
-      // User document still doesn't exist, throw error
-      throw new Error("User document not found. Please try logging in again.");
+      // User document doesn't exist yet - this can happen if called too quickly after signup
+      // The client should retry this call
+      throw new Error("User profile not ready yet. Please try again.");
     }
 
     return userId;

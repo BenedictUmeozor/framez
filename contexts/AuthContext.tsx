@@ -1,7 +1,6 @@
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useAuthActions } from "@convex-dev/auth/react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMutation, useQuery } from "convex/react";
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 
@@ -28,46 +27,24 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTH_TOKEN_KEY = "@framez_auth_token";
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { signIn: convexSignIn, signOut: convexSignOut } = useAuthActions();
   const currentUser = useQuery(api.users.getCurrentUser);
   const createOrUpdateUser = useMutation(api.users.createOrUpdateUser);
   
   const [isLoading, setIsLoading] = useState(true);
-  const [authError, setAuthError] = useState<string | null>(null);
-
-  // Check for stored auth token on mount
-  useEffect(() => {
-    checkStoredAuth();
-  }, []);
 
   // Update loading state when user data is fetched
+  // currentUser will be undefined while loading, null if not authenticated, or the user object if authenticated
   useEffect(() => {
     if (currentUser !== undefined) {
       setIsLoading(false);
     }
   }, [currentUser]);
 
-  const checkStoredAuth = async () => {
-    try {
-      const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
-      if (token) {
-        // Token exists, Convex will automatically restore session
-        console.log("Found stored auth token");
-      }
-    } catch (error) {
-      console.error("Error checking stored auth:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const signIn = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      setAuthError(null);
 
       const formData = new FormData();
       formData.append("email", email);
@@ -75,9 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       formData.append("flow", "signIn");
 
       await convexSignIn("password", formData);
-
-      // Store auth token
-      await AsyncStorage.setItem(AUTH_TOKEN_KEY, "authenticated");
+      // Convex Auth automatically persists the session via the storage adapter
     } catch (error) {
       // Parse error message for better user feedback
       let errorMessage = "Invalid email or password";
@@ -93,7 +68,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
       
-      setAuthError(errorMessage);
       throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -108,7 +82,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ) => {
     try {
       setIsLoading(true);
-      setAuthError(null);
 
       const formData = new FormData();
       formData.append("email", email);
@@ -116,9 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       formData.append("flow", "signUp");
 
       await convexSignIn("password", formData);
-
-      // Store auth token
-      await AsyncStorage.setItem(AUTH_TOKEN_KEY, "authenticated");
+      // Convex Auth automatically persists the session via the storage adapter
 
       // Update user profile after successful signup
       // We'll retry a few times in case the user document isn't ready yet
@@ -159,7 +130,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
       
-      setAuthError(errorMessage);
       throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -170,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       await convexSignOut();
-      await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+      // Convex Auth automatically clears the session from storage
     } catch (error) {
       console.error("Sign out error:", error);
       throw error;

@@ -1,70 +1,46 @@
-import { Image } from "expo-image";
-import { StatusBar } from "expo-status-bar";
+import { api } from "@/convex/_generated/api";
 import { Ionicons } from "@expo/vector-icons";
+import { useQuery } from "convex/react";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useCallback } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Pressable,
   StyleSheet,
   Text,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const POSTS = [
-  {
-    id: "1",
-    authorName: "Ayo Johnson",
-    authorAvatar:
-      "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=120&q=80",
-    timestamp: "2h ago",
-    caption: "Sunset hues hitting differently tonight 🌇",
-    image:
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
-    likes: 126,
-    comments: 14,
-  },
-  {
-    id: "2",
-    authorName: "Mira Kalu",
-    authorAvatar:
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=120&q=80",
-    timestamp: "5h ago",
-    caption: "Frames from my weekend photo walk 📷",
-    image:
-      "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80",
-    likes: 89,
-    comments: 23,
-  },
-  {
-    id: "3",
-    authorName: "Ken Ade",
-    authorAvatar:
-      "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=120&q=80",
-    timestamp: "1d ago",
-    caption:
-      "Experimenting with long exposure at the city center. Thoughts?",
-    image:
-      "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=900&q=80",
-    likes: 204,
-    comments: 37,
-  },
-];
+// Helper function to format timestamp
+function formatTimestamp(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp;
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) return `${days}d ago`;
+  if (hours > 0) return `${hours}h ago`;
+  if (minutes > 0) return `${minutes}m ago`;
+  return "Just now";
+}
 
 export default function HomeScreen() {
   const router = useRouter();
+  const posts = useQuery(api.posts.getAllPosts, { limit: 50 });
+
   const renderItem = useCallback(
-    ({ item }: { item: (typeof POSTS)[number] }) => {
+    ({ item }: { item: NonNullable<typeof posts>[number] }) => {
       const openPostDetails = () => router.push({ pathname: "/post-details" });
       const openAuthorProfile = () => router.push({ pathname: "/other-profile" });
 
       return (
-        <Pressable
-          style={styles.card}
-          onPress={openPostDetails}
-          hitSlop={4}
-        >
+        <Pressable style={styles.card} onPress={openPostDetails} hitSlop={4}>
           <Pressable
             style={styles.cardHeader}
             onPress={(event) => {
@@ -73,10 +49,25 @@ export default function HomeScreen() {
             }}
             hitSlop={4}
           >
-            <Image source={{ uri: item.authorAvatar }} style={styles.avatar} />
+            <View style={styles.avatar}>
+              {item.author?.avatarUrl ? (
+                <Image
+                  source={{ uri: item.author.avatarUrl }}
+                  style={styles.avatarImage}
+                />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Ionicons name="person" size={20} color="#8a8a8a" />
+                </View>
+              )}
+            </View>
             <View style={styles.authorBlock}>
-              <Text style={styles.authorName}>{item.authorName}</Text>
-              <Text style={styles.timestamp}>{item.timestamp}</Text>
+              <Text style={styles.authorName}>
+                {item.author?.name || "Unknown User"}
+              </Text>
+              <Text style={styles.timestamp}>
+                {formatTimestamp(item._creationTime)}
+              </Text>
             </View>
             <Pressable
               style={styles.moreButton}
@@ -89,19 +80,25 @@ export default function HomeScreen() {
             </Pressable>
           </Pressable>
 
-          <Text style={styles.caption}>{item.caption}</Text>
+          {item.caption && <Text style={styles.caption}>{item.caption}</Text>}
 
-          <Image source={{ uri: item.image }} style={styles.postImage} contentFit="cover" />
+          {item.imageUrl && (
+            <Image
+              source={{ uri: item.imageUrl }}
+              style={styles.postImage}
+              contentFit="cover"
+            />
+          )}
 
           <View style={styles.actionsRow}>
             <View style={styles.actionsLeft}>
               <Pressable style={styles.actionButton} hitSlop={8}>
                 <Ionicons name="heart-outline" size={22} color="#ffffff" />
-                <Text style={styles.actionText}>{item.likes}</Text>
+                <Text style={styles.actionText}>{item.likesCount}</Text>
               </Pressable>
               <Pressable style={styles.actionButton} hitSlop={8}>
                 <Ionicons name="chatbubble-outline" size={22} color="#ffffff" />
-                <Text style={styles.actionText}>{item.comments}</Text>
+                <Text style={styles.actionText}>{item.commentsCount}</Text>
               </Pressable>
             </View>
             <Pressable style={styles.saveButton} hitSlop={8}>
@@ -113,6 +110,60 @@ export default function HomeScreen() {
     },
     [router]
   );
+
+  if (posts === undefined) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+        <StatusBar style="light" />
+        <View style={styles.header}>
+          <Text style={styles.logoText}>Framez</Text>
+          <Pressable
+            style={styles.headerIcon}
+            hitSlop={8}
+            onPress={() => router.push({ pathname: "/profile" })}
+          >
+            <Ionicons name="person-circle-outline" size={22} color="#ffffff" />
+          </Pressable>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#34c759" />
+          <Text style={styles.loadingText}>Loading feed...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (posts.length === 0) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+        <StatusBar style="light" />
+        <View style={styles.header}>
+          <Text style={styles.logoText}>Framez</Text>
+          <Pressable
+            style={styles.headerIcon}
+            hitSlop={8}
+            onPress={() => router.push({ pathname: "/profile" })}
+          >
+            <Ionicons name="person-circle-outline" size={22} color="#ffffff" />
+          </Pressable>
+        </View>
+        <View style={styles.emptyContainer}>
+          <Ionicons name="images-outline" size={64} color="#3a3a3a" />
+          <Text style={styles.emptyTitle}>No posts yet</Text>
+          <Text style={styles.emptyText}>
+            Be the first to share something!
+          </Text>
+        </View>
+        <Pressable
+          style={styles.fab}
+          hitSlop={16}
+          onPress={() => router.push({ pathname: "/create-post" })}
+        >
+          <Ionicons name="add" size={28} color="#050505" />
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
@@ -129,8 +180,8 @@ export default function HomeScreen() {
       </View>
 
       <FlatList
-        data={POSTS}
-        keyExtractor={(item) => item.id}
+        data={posts}
+        keyExtractor={(item) => item._id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
@@ -193,6 +244,18 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+  },
+  avatarPlaceholder: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#1a1a1a",
+    alignItems: "center",
+    justifyContent: "center",
   },
   authorBlock: {
     flex: 1,
@@ -258,5 +321,32 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+  },
+  loadingText: {
+    color: "#8a8a8a",
+    fontSize: 16,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+    paddingHorizontal: 48,
+  },
+  emptyTitle: {
+    color: "#ffffff",
+    fontSize: 20,
+    fontWeight: "600",
+  },
+  emptyText: {
+    color: "#8a8a8a",
+    fontSize: 15,
+    textAlign: "center",
   },
 });

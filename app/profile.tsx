@@ -98,7 +98,11 @@ export default function ProfileScreen() {
                 <Ionicons name="chevron-back" size={22} color="#ffffff" />
               </Pressable>
               <Text style={styles.topTitle}>Profile</Text>
-              <Pressable style={styles.topIcon} hitSlop={8} onPress={() => {}}>
+              <Pressable
+                style={styles.topIcon}
+                hitSlop={8}
+                onPress={() => router.push({ pathname: "/settings" })}
+              >
                 <Ionicons name="ellipsis-horizontal" size={20} color="#ffffff" />
               </Pressable>
             </View>

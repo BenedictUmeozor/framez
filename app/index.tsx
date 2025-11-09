@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import {
   ActivityIndicator,
@@ -7,8 +8,19 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 
 export default function SplashScreen() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      router.replace("/login");
+    }, 1600);
+
+    return () => clearTimeout(timeout);
+  }, [router]);
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />

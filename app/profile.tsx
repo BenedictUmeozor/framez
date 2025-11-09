@@ -1,19 +1,21 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/convex/_generated/api";
+import { useUpdateProfile } from "@/hooks/useUpdateProfile";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "convex/react";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 const formatNumber = (value: number) => {
   if (value >= 1000) {
@@ -25,10 +27,33 @@ const formatNumber = (value: number) => {
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
+  const { pickAvatar, updateUserProfile, isUpdating } = useUpdateProfile();
   const userPosts = useQuery(
     api.posts.getPostsByUserId,
     user?._id ? { userId: user._id } : "skip"
   );
+
+  const handleUpdateAvatar = async () => {
+    try {
+      const image = await pickAvatar();
+      if (image) {
+        await updateUserProfile({
+          avatarUri: image.uri,
+        });
+        Toast.show({
+          type: "success",
+          text1: "Success",
+          text2: "Avatar updated successfully!",
+        });
+      }
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: error instanceof Error ? error.message : "Failed to update avatar",
+      });
+    }
+  };
 
   if (authLoading || !user) {
     return (
@@ -113,8 +138,17 @@ export default function ProfileScreen() {
                 >
                   <Text style={styles.primaryButtonText}>Edit profile</Text>
                 </Pressable>
-                <Pressable style={styles.secondaryButton} hitSlop={6}>
-                  <Ionicons name="share-outline" size={18} color="#ffffff" />
+                <Pressable
+                  style={styles.secondaryButton}
+                  hitSlop={6}
+                  onPress={handleUpdateAvatar}
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Ionicons name="camera-outline" size={18} color="#ffffff" />
+                  )}
                 </Pressable>
               </View>
             </View>

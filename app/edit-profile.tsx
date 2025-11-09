@@ -1,9 +1,12 @@
-import { Image } from "expo-image";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUpdateProfile } from "@/hooks/useUpdateProfile";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -16,32 +19,86 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const CURRENT_PROFILE = {
-  name: "Ayo Johnson",
-  username: "@ayo_frames",
-  bio: "Photographer & filmmaker. Capturing everyday magic through frames and light.",
-  avatar:
-    "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=200&q=80",
-  email: "ayo@framez.app",
-};
+import Toast from "react-native-toast-message";
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const [name, setName] = useState(CURRENT_PROFILE.name);
-  const [username, setUsername] = useState(CURRENT_PROFILE.username.replace("@", ""));
-  const [bio, setBio] = useState(CURRENT_PROFILE.bio);
-  const [email] = useState(CURRENT_PROFILE.email);
-  const [avatar] = useState(CURRENT_PROFILE.avatar);
+  const { user } = useAuth();
+  const { pickAvatar, updateUserProfile, isUpdating } = useUpdateProfile();
+  
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [bio, setBio] = useState("");
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
 
-  const handleSave = () => {
-    // TODO: persist profile updates and navigate back
-    router.back();
+  useEffect(() => {
+    if (user) {
+      setName(user.name || "");
+      setUsername(user.username || "");
+      setBio(user.bio || "");
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Name is required",
+      });
+      return;
+    }
+
+    try {
+      await updateUserProfile({
+        name: name.trim(),
+        bio: bio.trim() || undefined,
+        avatarUri: avatarUri || undefined,
+      });
+      
+      Toast.show({
+        type: "success",
+        text1: "Success",
+        text2: "Profile updated successfully!",
+      });
+      
+      router.back();
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: error instanceof Error ? error.message : "Failed to update profile",
+      });
+    }
   };
 
-  const handleChangeAvatar = () => {
-    // TODO: integrate media picker for avatar updates
+  const handleChangeAvatar = async () => {
+    try {
+      const image = await pickAvatar();
+      if (image) {
+        setAvatarUri(image.uri);
+      }
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: error instanceof Error ? error.message : "Failed to pick avatar",
+      });
+    }
   };
+
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+        <StatusBar style="light" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#34c759" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const displayAvatar = avatarUri || user.avatarUrl;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
@@ -67,8 +124,23 @@ export default function EditProfileScreen() {
 
             <View style={styles.avatarSection}>
               <View style={styles.avatarWrapper}>
-                <Image source={{ uri: avatar }} style={styles.avatarImage} contentFit="cover" />
-                <Pressable style={styles.avatarBadge} hitSlop={6} onPress={handleChangeAvatar}>
+                {displayAvatar ? (
+                  <Image
+                    source={{ uri: displayAvatar }}
+                    style={styles.avatarImage}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View style={[styles.avatarImage, styles.avatarPlaceholder]}>
+                    <Ionicons name="person" size={48} color="#8a8a8a" />
+                  </View>
+                )}
+                <Pressable
+                  style={styles.avatarBadge}
+                  hitSlop={6}
+                  onPress={handleChangeAvatar}
+                  disabled={isUpdating}
+                >
                   <Ionicons name="camera" size={16} color="#050505" />
                 </Pressable>
               </View>
@@ -91,19 +163,10 @@ export default function EditProfileScreen() {
 
               <View style={styles.fieldGroup}>
                 <Text style={styles.label}>Username</Text>
-                <View style={styles.usernameRow}>
-                  <Text style={styles.usernamePrefix}>@</Text>
-                  <TextInput
-                    value={username}
-                    onChangeText={setUsername}
-                    placeholder="username"
-                    placeholderTextColor="#7d7d7d"
-                    style={styles.usernameInput}
-                    selectionColor="#ffffff"
-                    autoCapitalize="none"
-                  />
+                <View style={[styles.input, styles.disabledInput]}>
+                  <Text style={styles.disabledText}>@{username}</Text>
                 </View>
-                <Text style={styles.helperText}>Only letters, numbers, and underscores.</Text>
+                <Text style={styles.helperText}>Username cannot be changed.</Text>
               </View>
 
               <View style={styles.fieldGroup}>
@@ -125,9 +188,9 @@ export default function EditProfileScreen() {
               <View style={styles.fieldGroup}>
                 <Text style={styles.label}>Email</Text>
                 <View style={[styles.input, styles.disabledInput]}>
-                  <Text style={styles.disabledText}>{email}</Text>
+                  <Text style={styles.disabledText}>{user.email || "No email"}</Text>
                 </View>
-                <Text style={styles.helperText}>Email updates coming soon.</Text>
+                <Text style={styles.helperText}>Email cannot be changed.</Text>
               </View>
             </View>
           </ScrollView>
@@ -138,13 +201,17 @@ export default function EditProfileScreen() {
             style={({ pressed }) => [
               styles.saveButton,
               pressed && styles.saveButtonPressed,
-              !(name.trim() && username.trim()) && styles.saveButtonDisabled,
+              (!name.trim() || isUpdating) && styles.saveButtonDisabled,
             ]}
-            disabled={!(name.trim() && username.trim())}
+            disabled={!name.trim() || isUpdating}
             onPress={handleSave}
             hitSlop={8}
           >
-            <Text style={styles.saveText}>Save changes</Text>
+            {isUpdating ? (
+              <ActivityIndicator color="#050505" />
+            ) : (
+              <Text style={styles.saveText}>Save changes</Text>
+            )}
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -197,6 +264,16 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 55,
+  },
+  avatarPlaceholder: {
+    backgroundColor: "#1a1a1a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   avatarBadge: {
     position: "absolute",

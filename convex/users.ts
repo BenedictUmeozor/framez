@@ -133,13 +133,27 @@ export const checkEmailAvailable = query({
 });
 
 /**
+ * Generate upload URL for avatar
+ */
+export const generateAvatarUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/**
  * Update user profile
  */
 export const updateProfile = mutation({
   args: {
     name: v.optional(v.string()),
     username: v.optional(v.string()),
-    avatarUrl: v.optional(v.string()),
+    avatarStorageId: v.optional(v.id("_storage")),
     bio: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -160,7 +174,20 @@ export const updateProfile = mutation({
       }
     }
 
-    await ctx.db.patch(userId, args);
+    // Get avatar URL if storage ID is provided
+    let avatarUrl: string | undefined;
+    if (args.avatarStorageId) {
+      const url = await ctx.storage.getUrl(args.avatarStorageId);
+      avatarUrl = url ?? undefined;
+    }
+
+    const updateData: any = {};
+    if (args.name !== undefined) updateData.name = args.name;
+    if (args.username !== undefined) updateData.username = args.username;
+    if (args.bio !== undefined) updateData.bio = args.bio;
+    if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl;
+
+    await ctx.db.patch(userId, updateData);
     return userId;
   },
 });

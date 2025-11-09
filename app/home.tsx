@@ -56,22 +56,38 @@ export default function HomeScreen() {
   const router = useRouter();
   const renderItem = useCallback(
     ({ item }: { item: (typeof POSTS)[number] }) => {
+      const openPostDetails = () => router.push({ pathname: "/post-details" });
+      const openAuthorProfile = () => router.push({ pathname: "/other-profile" });
+
       return (
         <Pressable
           style={styles.card}
-          onPress={() => router.push({ pathname: "/post-details" })}
+          onPress={openPostDetails}
           hitSlop={4}
         >
-          <View style={styles.cardHeader}>
+          <Pressable
+            style={styles.cardHeader}
+            onPress={(event) => {
+              event.stopPropagation();
+              openAuthorProfile();
+            }}
+            hitSlop={4}
+          >
             <Image source={{ uri: item.authorAvatar }} style={styles.avatar} />
             <View style={styles.authorBlock}>
               <Text style={styles.authorName}>{item.authorName}</Text>
               <Text style={styles.timestamp}>{item.timestamp}</Text>
             </View>
-            <Pressable style={styles.moreButton} hitSlop={8}>
+            <Pressable
+              style={styles.moreButton}
+              hitSlop={8}
+              onPress={(event) => {
+                event.stopPropagation();
+              }}
+            >
               <Ionicons name="ellipsis-horizontal" size={20} color="#b3b3b3" />
             </Pressable>
-          </View>
+          </Pressable>
 
           <Text style={styles.caption}>{item.caption}</Text>
 

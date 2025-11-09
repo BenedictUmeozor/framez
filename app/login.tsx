@@ -22,11 +22,12 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
 
   const handleLogin = () => {
-    // TODO: integrate authentication flow and navigate to app shell
+    // TODO: integrate authentication flow
+    router.replace({ pathname: "/home" });
   };
 
   const goToSignup = () => {
-    router.push("/signup");
+    router.push({ pathname: "/signup" });
   };
 
   return (

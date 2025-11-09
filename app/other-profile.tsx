@@ -124,12 +124,9 @@ export default function OtherProfileScreen() {
                 </View>
               </View>
 
-              <View style={styles.actionsRow}>
+              <View style={styles.actionsRowSingle}>
                 <Pressable style={styles.primaryButton} hitSlop={6}>
                   <Text style={styles.primaryButtonText}>Follow</Text>
-                </Pressable>
-                <Pressable style={styles.secondaryButton} hitSlop={6}>
-                  <Ionicons name="paper-plane-outline" size={18} color="#ffffff" />
                 </Pressable>
               </View>
             </View>
@@ -237,6 +234,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
   },
+  actionsRowSingle: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
   primaryButton: {
     flex: 1,
     alignItems: "center",
@@ -249,14 +251,6 @@ const styles = StyleSheet.create({
     color: "#050505",
     fontSize: 15,
     fontWeight: "700",
-  },
-  secondaryButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: "#1b1b1b",
-    alignItems: "center",
-    justifyContent: "center",
   },
   sectionHeader: {
     flexDirection: "row",

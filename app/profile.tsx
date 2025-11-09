@@ -125,7 +125,11 @@ export default function ProfileScreen() {
               </View>
 
               <View style={styles.actionsRow}>
-                <Pressable style={styles.primaryButton} hitSlop={6}>
+                <Pressable
+                  style={styles.primaryButton}
+                  hitSlop={6}
+                  onPress={() => router.push({ pathname: "/edit-profile" })}
+                >
                   <Text style={styles.primaryButtonText}>Edit profile</Text>
                 </Pressable>
                 <Pressable style={styles.secondaryButton} hitSlop={6}>

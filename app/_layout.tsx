@@ -10,6 +10,8 @@ export default function RootLayout() {
       <Stack.Screen name="create-post" />
       <Stack.Screen name="post-details" />
       <Stack.Screen name="profile" />
+      <Stack.Screen name="edit-profile" />
+      <Stack.Screen name="settings" />
     </Stack>
   );
 }

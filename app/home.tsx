@@ -54,42 +54,49 @@ const POSTS = [
 
 export default function HomeScreen() {
   const router = useRouter();
-  const renderItem = useCallback(({ item }: { item: (typeof POSTS)[number] }) => {
-    return (
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Image source={{ uri: item.authorAvatar }} style={styles.avatar} />
-          <View style={styles.authorBlock}>
-            <Text style={styles.authorName}>{item.authorName}</Text>
-            <Text style={styles.timestamp}>{item.timestamp}</Text>
-          </View>
-          <Pressable style={styles.moreButton} hitSlop={8}>
-            <Ionicons name="ellipsis-horizontal" size={20} color="#b3b3b3" />
-          </Pressable>
-        </View>
-
-        <Text style={styles.caption}>{item.caption}</Text>
-
-        <Image source={{ uri: item.image }} style={styles.postImage} contentFit="cover" />
-
-        <View style={styles.actionsRow}>
-          <View style={styles.actionsLeft}>
-            <Pressable style={styles.actionButton} hitSlop={8}>
-              <Ionicons name="heart-outline" size={22} color="#ffffff" />
-              <Text style={styles.actionText}>{item.likes}</Text>
-            </Pressable>
-            <Pressable style={styles.actionButton} hitSlop={8}>
-              <Ionicons name="chatbubble-outline" size={22} color="#ffffff" />
-              <Text style={styles.actionText}>{item.comments}</Text>
+  const renderItem = useCallback(
+    ({ item }: { item: (typeof POSTS)[number] }) => {
+      return (
+        <Pressable
+          style={styles.card}
+          onPress={() => router.push({ pathname: "/post-details" })}
+          hitSlop={4}
+        >
+          <View style={styles.cardHeader}>
+            <Image source={{ uri: item.authorAvatar }} style={styles.avatar} />
+            <View style={styles.authorBlock}>
+              <Text style={styles.authorName}>{item.authorName}</Text>
+              <Text style={styles.timestamp}>{item.timestamp}</Text>
+            </View>
+            <Pressable style={styles.moreButton} hitSlop={8}>
+              <Ionicons name="ellipsis-horizontal" size={20} color="#b3b3b3" />
             </Pressable>
           </View>
-          <Pressable style={styles.saveButton} hitSlop={8}>
-            <Ionicons name="bookmark-outline" size={22} color="#ffffff" />
-          </Pressable>
-        </View>
-      </View>
-    );
-  }, []);
+
+          <Text style={styles.caption}>{item.caption}</Text>
+
+          <Image source={{ uri: item.image }} style={styles.postImage} contentFit="cover" />
+
+          <View style={styles.actionsRow}>
+            <View style={styles.actionsLeft}>
+              <Pressable style={styles.actionButton} hitSlop={8}>
+                <Ionicons name="heart-outline" size={22} color="#ffffff" />
+                <Text style={styles.actionText}>{item.likes}</Text>
+              </Pressable>
+              <Pressable style={styles.actionButton} hitSlop={8}>
+                <Ionicons name="chatbubble-outline" size={22} color="#ffffff" />
+                <Text style={styles.actionText}>{item.comments}</Text>
+              </Pressable>
+            </View>
+            <Pressable style={styles.saveButton} hitSlop={8}>
+              <Ionicons name="bookmark-outline" size={22} color="#ffffff" />
+            </Pressable>
+          </View>
+        </Pressable>
+      );
+    },
+    [router]
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>

@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
-import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
   Keyboard,
@@ -19,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const MOCK_IMAGE = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80";
 
 export default function CreatePostScreen() {
+  const router = useRouter();
   const [caption, setCaption] = useState("");
   const [imageUri, setImageUri] = useState<string | null>(MOCK_IMAGE);
 
@@ -52,7 +54,11 @@ export default function CreatePostScreen() {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.header}>
-              <Pressable style={styles.headerButton} hitSlop={8}>
+              <Pressable
+                style={styles.headerButton}
+                hitSlop={8}
+                onPress={() => router.back()}
+              >
                 <Ionicons name="close" size={24} color="#ffffff" />
               </Pressable>
               <Text style={styles.headerTitle}>Create post</Text>

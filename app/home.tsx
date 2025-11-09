@@ -1,3 +1,4 @@
+import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/convex/_generated/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "convex/react";
@@ -11,7 +12,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -32,12 +33,20 @@ function formatTimestamp(timestamp: number): string {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const posts = useQuery(api.posts.getAllPosts, { limit: 50 });
 
   const renderItem = useCallback(
     ({ item }: { item: NonNullable<typeof posts>[number] }) => {
       const openPostDetails = () => router.push({ pathname: "/post-details" });
-      const openAuthorProfile = () => router.push({ pathname: "/other-profile" });
+      const isOwnPost = user?._id === item.authorId;
+      const openAuthorProfile = () => {
+        if (isOwnPost) {
+          router.push({ pathname: "/profile" });
+        } else {
+          router.push({ pathname: "/other-profile" });
+        }
+      };
 
       return (
         <Pressable style={styles.card} onPress={openPostDetails} hitSlop={4}>
@@ -108,7 +117,7 @@ export default function HomeScreen() {
         </Pressable>
       );
     },
-    [router]
+    [router, user]
   );
 
   if (posts === undefined) {

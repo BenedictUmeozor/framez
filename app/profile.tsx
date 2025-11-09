@@ -1,74 +1,19 @@
-import { Image } from "expo-image";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/convex/_generated/api";
 import { Ionicons } from "@expo/vector-icons";
+import { useQuery } from "convex/react";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useMemo } from "react";
 import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const PROFILE = {
-  name: "Ayo Johnson",
-  username: "@ayo_frames",
-  bio: "Photographer & filmmaker. Capturing everyday magic through frames and light.",
-  avatar:
-    "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=200&q=80",
-  stats: {
-    posts: 128,
-    followers: 18400,
-    following: 296,
-  },
-};
-
-const POSTS = [
-  {
-    id: "p1",
-    image:
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
-    likes: 126,
-    comments: 14,
-  },
-  {
-    id: "p2",
-    image:
-      "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80",
-    likes: 98,
-    comments: 21,
-  },
-  {
-    id: "p3",
-    image:
-      "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=900&q=80",
-    likes: 207,
-    comments: 37,
-  },
-  {
-    id: "p4",
-    image:
-      "https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&fit=crop&w=900&q=80",
-    likes: 143,
-    comments: 18,
-  },
-  {
-    id: "p5",
-    image:
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80",
-    likes: 88,
-    comments: 9,
-  },
-  {
-    id: "p6",
-    image:
-      "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=900&q=80",
-    likes: 176,
-    comments: 22,
-  },
-];
 
 const formatNumber = (value: number) => {
   if (value >= 1000) {
@@ -79,14 +24,30 @@ const formatNumber = (value: number) => {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const posts = useMemo(() => POSTS, []);
+  const { user, isLoading: authLoading } = useAuth();
+  const userPosts = useQuery(
+    api.posts.getPostsByUserId,
+    user?._id ? { userId: user._id } : "skip"
+  );
+
+  if (authLoading || !user) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+        <StatusBar style="light" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#34c759" />
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <StatusBar style="light" />
       <FlatList
-        data={posts}
-        keyExtractor={(item) => item.id}
+        data={userPosts || []}
+        keyExtractor={(item) => item._id}
         numColumns={3}
         columnWrapperStyle={styles.gridRow}
         contentContainerStyle={styles.listContent}
@@ -94,7 +55,11 @@ export default function ProfileScreen() {
         ListHeaderComponent={
           <View style={styles.headerContainer}>
             <View style={styles.topBar}>
-              <Pressable style={styles.topIcon} hitSlop={8} onPress={() => router.back()}>
+              <Pressable
+                style={styles.topIcon}
+                hitSlop={8}
+                onPress={() => router.back()}
+              >
                 <Ionicons name="chevron-back" size={22} color="#ffffff" />
               </Pressable>
               <Text style={styles.topTitle}>Profile</Text>
@@ -108,22 +73,34 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.profileSection}>
-              <Image source={{ uri: PROFILE.avatar }} style={styles.avatar} />
-              <Text style={styles.name}>{PROFILE.name}</Text>
-              <Text style={styles.username}>{PROFILE.username}</Text>
-              <Text style={styles.bio}>{PROFILE.bio}</Text>
+              {user.avatarUrl ? (
+                <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                  <Ionicons name="person" size={40} color="#8a8a8a" />
+                </View>
+              )}
+              <Text style={styles.name}>{user.name || "User"}</Text>
+              <Text style={styles.username}>@{user.username || "username"}</Text>
+              {user.bio && <Text style={styles.bio}>{user.bio}</Text>}
 
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{PROFILE.stats.posts}</Text>
+                  <Text style={styles.statValue}>
+                    {userPosts?.length || 0}
+                  </Text>
                   <Text style={styles.statLabel}>Posts</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{formatNumber(PROFILE.stats.followers)}</Text>
+                  <Text style={styles.statValue}>
+                    {formatNumber(user.followersCount || 0)}
+                  </Text>
                   <Text style={styles.statLabel}>Followers</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{formatNumber(PROFILE.stats.following)}</Text>
+                  <Text style={styles.statValue}>
+                    {formatNumber(user.followingCount || 0)}
+                  </Text>
                   <Text style={styles.statLabel}>Following</Text>
                 </View>
               </View>
@@ -156,15 +133,25 @@ export default function ProfileScreen() {
             onPress={() => router.push({ pathname: "/post-details" })}
             hitSlop={4}
           >
-            <Image source={{ uri: item.image }} style={styles.gridImage} contentFit="cover" />
+            {item.imageUrl ? (
+              <Image
+                source={{ uri: item.imageUrl }}
+                style={styles.gridImage}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={styles.gridImagePlaceholder}>
+                <Ionicons name="image-outline" size={32} color="#3a3a3a" />
+              </View>
+            )}
             <View style={styles.gridOverlay}>
               <View style={styles.gridOverlayRow}>
                 <Ionicons name="heart" size={14} color="#ffffff" />
-                <Text style={styles.overlayText}>{item.likes}</Text>
+                <Text style={styles.overlayText}>{item.likesCount}</Text>
               </View>
               <View style={styles.gridOverlayRow}>
                 <Ionicons name="chatbubble" size={14} color="#ffffff" />
-                <Text style={styles.overlayText}>{item.comments}</Text>
+                <Text style={styles.overlayText}>{item.commentsCount}</Text>
               </View>
             </View>
           </Pressable>
@@ -215,6 +202,21 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
+  },
+  avatarPlaceholder: {
+    backgroundColor: "#1a1a1a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+  },
+  loadingText: {
+    color: "#8a8a8a",
+    fontSize: 16,
   },
   name: {
     color: "#ffffff",
@@ -306,6 +308,13 @@ const styles = StyleSheet.create({
   gridImage: {
     width: "100%",
     height: "100%",
+  },
+  gridImagePlaceholder: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#1a1a1a",
+    alignItems: "center",
+    justifyContent: "center",
   },
   gridOverlay: {
     position: "absolute",

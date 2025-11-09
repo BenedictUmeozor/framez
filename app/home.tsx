@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useCallback } from "react";
 import {
   FlatList,
@@ -52,6 +53,7 @@ const POSTS = [
 ];
 
 export default function HomeScreen() {
+  const router = useRouter();
   const renderItem = useCallback(({ item }: { item: (typeof POSTS)[number] }) => {
     return (
       <View style={styles.card}>
@@ -107,7 +109,11 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       />
 
-      <Pressable style={styles.fab} hitSlop={16}>
+      <Pressable
+        style={styles.fab}
+        hitSlop={16}
+        onPress={() => router.push({ pathname: "/create-post" })}
+      >
         <Ionicons name="add" size={28} color="#050505" />
       </Pressable>
     </SafeAreaView>

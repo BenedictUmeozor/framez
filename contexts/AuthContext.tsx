@@ -117,6 +117,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       await convexSignIn("password", formData);
 
+      // Wait a bit for Convex Auth to create the user document
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       // Create user profile
       await createOrUpdateUser({
         name,

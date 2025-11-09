@@ -1,6 +1,6 @@
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
+import { auth } from "./auth";
 
 /**
  * Get current authenticated user
@@ -8,12 +8,12 @@ import { mutation, query } from "./_generated/server";
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       return null;
     }
     
-    const user = await ctx.db.get(identity.subject as Id<"users">);
+    const user = await ctx.db.get(userId);
     return user;
   },
 });
@@ -30,12 +30,10 @@ export const createOrUpdateUser = mutation({
     bio: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
-    
-    const userId = identity.subject as Id<"users">;
 
     // Check if username is already taken by another user
     const existingUser = await ctx.db
@@ -47,16 +45,33 @@ export const createOrUpdateUser = mutation({
       throw new Error("Username already taken");
     }
 
-    // Update user profile
-    await ctx.db.patch(userId, {
-      name: args.name,
-      username: args.username,
-      email: args.email,
-      avatarUrl: args.avatarUrl,
-      bio: args.bio,
-      followersCount: 0,
-      followingCount: 0,
-    });
+    // Try to get the user document
+    let user = await ctx.db.get(userId);
+    let retries = 0;
+    const maxRetries = 5;
+    
+    // Retry logic in case user document is still being created
+    while (!user && retries < maxRetries) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      user = await ctx.db.get(userId);
+      retries++;
+    }
+    
+    if (user) {
+      // Update existing user profile
+      await ctx.db.patch(userId, {
+        name: args.name,
+        username: args.username,
+        email: args.email,
+        avatarUrl: args.avatarUrl,
+        bio: args.bio,
+        followersCount: user.followersCount ?? 0,
+        followingCount: user.followingCount ?? 0,
+      });
+    } else {
+      // User document still doesn't exist, throw error
+      throw new Error("User document not found. Please try logging in again.");
+    }
 
     return userId;
   },
@@ -136,12 +151,10 @@ export const updateProfile = mutation({
     bio: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
       throw new Error("Not authenticated");
     }
-    
-    const userId = identity.subject as Id<"users">;
 
     // If username is being updated, check if it's available
     if (args.username) {

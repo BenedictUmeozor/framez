@@ -1,15 +1,17 @@
+import { useAuth } from "@/contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useMemo, useState } from "react";
 import {
+    Alert,
     Pressable,
     ScrollView,
     StyleSheet,
     Switch,
     Text,
     View,
-    useColorScheme
+    useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 

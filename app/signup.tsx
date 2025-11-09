@@ -1,8 +1,11 @@
+import { useAuth } from "@/contexts/AuthContext";
 import { Image } from "expo-image";
-import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -18,13 +21,32 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const { signUp, isLoading } = useAuth();
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSignUp = () => {
-    // TODO: integrate registration flow and navigate to onboarding/app shell
+  const handleSignUp = async () => {
+    if (!name || !username || !email || !password) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    if (password.length < 8) {
+      Alert.alert("Error", "Password must be at least 8 characters long");
+      return;
+    }
+
+    try {
+      await signUp(email, password, name, username);
+      router.replace("/home");
+    } catch (error) {
+      Alert.alert(
+        "Sign Up Failed",
+        error instanceof Error ? error.message : "Could not create account"
+      );
+    }
   };
 
   const goToLogin = () => {
@@ -133,10 +155,16 @@ export default function SignUpScreen() {
                   style={({ pressed }) => [
                     styles.signupButton,
                     pressed && styles.signupButtonPressed,
+                    isLoading && styles.signupButtonDisabled,
                   ]}
                   onPress={handleSignUp}
+                  disabled={isLoading}
                 >
-                  <Text style={styles.signupText}>Create account</Text>
+                  {isLoading ? (
+                    <ActivityIndicator color="#050505" />
+                  ) : (
+                    <Text style={styles.signupText}>Create account</Text>
+                  )}
                 </Pressable>
               </View>
             </View>
@@ -234,6 +262,9 @@ const styles = StyleSheet.create({
   },
   signupButtonPressed: {
     opacity: 0.85,
+  },
+  signupButtonDisabled: {
+    opacity: 0.6,
   },
   signupText: {
     color: "#050505",

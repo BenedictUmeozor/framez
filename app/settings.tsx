@@ -1,17 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useMemo, useState } from "react";
 import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-  useColorScheme,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    View,
+    useColorScheme
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useMemo, useState } from "react";
 
 const ACCOUNT_ACTIONS = [
   {
@@ -57,12 +57,35 @@ const SUPPORT_ACTIONS = [
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { signOut } = useAuth();
   const colorScheme = useColorScheme();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkMode, setDarkMode] = useState(colorScheme === "dark");
 
   const accountActions = useMemo(() => ACCOUNT_ACTIONS, []);
   const supportActions = useMemo(() => SUPPORT_ACTIONS, []);
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Log Out",
+      "Are you sure you want to log out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log Out",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await signOut();
+              router.replace("/login");
+            } catch (error) {
+              Alert.alert("Error", "Failed to log out");
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
@@ -178,7 +201,7 @@ export default function SettingsScreen() {
 
         <View style={styles.section}>
           <View style={styles.card}>
-            <Pressable style={styles.row} hitSlop={8} onPress={() => router.replace({ pathname: "/login" })}>
+            <Pressable style={styles.row} hitSlop={8} onPress={handleLogout}>
               <View style={styles.rowLeft}>
                 <View style={[styles.iconAvatar, styles.dangerAvatar]}>
                   <Ionicons name="log-out-outline" size={18} color="#f95f5f" />

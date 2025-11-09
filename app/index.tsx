@@ -1,25 +1,33 @@
-import { useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
 import {
-  ActivityIndicator,
-  Image,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Image,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
 
 export default function SplashScreen() {
   const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      router.replace("/login");
-    }, 1600);
+    if (!isLoading) {
+      const timeout = setTimeout(() => {
+        if (isAuthenticated) {
+          router.replace("/home");
+        } else {
+          router.replace("/login");
+        }
+      }, 1600);
 
-    return () => clearTimeout(timeout);
-  }, [router]);
+      return () => clearTimeout(timeout);
+    }
+  }, [isLoading, isAuthenticated, router]);
 
   return (
     <SafeAreaView style={styles.container}>

@@ -10,21 +10,26 @@ export default defineSchema({
   // Authentication tables from Convex Auth
   ...authTables,
 
-  // Users table - stores user profile information
+  // Users table - extends auth users table with profile information
   users: defineTable({
-    name: v.string(),
-    username: v.string(),
-    email: v.string(),
+    // Required auth fields
+    email: v.optional(v.string()),
+    emailVerificationTime: v.optional(v.number()),
+    phone: v.optional(v.string()),
+    phoneVerificationTime: v.optional(v.number()),
+    isAnonymous: v.optional(v.boolean()),
+    image: v.optional(v.string()),
+    
+    // Custom profile fields
+    name: v.optional(v.string()),
+    username: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
     bio: v.optional(v.string()),
-    followersCount: v.number(),
-    followingCount: v.number(),
-    // tokenIdentifier links to auth system
-    tokenIdentifier: v.optional(v.string()),
+    followersCount: v.optional(v.number()),
+    followingCount: v.optional(v.number()),
   })
-    .index("by_email", ["email"])
-    .index("by_username", ["username"])
-    .index("by_token", ["tokenIdentifier"]),
+    .index("email", ["email"])
+    .index("by_username", ["username"]),
 
   // Posts table - stores user posts with captions and images
   posts: defineTable({
@@ -34,8 +39,7 @@ export default defineSchema({
     likesCount: v.number(),
     commentsCount: v.number(),
   })
-    .index("by_author", ["authorId"])
-    .index("by_creation_time", ["_creationTime"]),
+    .index("by_author", ["authorId"]),
 
   // Comments table - stores comments on posts
   comments: defineTable({

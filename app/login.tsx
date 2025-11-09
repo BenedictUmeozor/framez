@@ -1,8 +1,11 @@
+import { useAuth } from "@/contexts/AuthContext";
 import { Image } from "expo-image";
-import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -18,12 +21,25 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { signIn, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = () => {
-    // TODO: integrate authentication flow
-    router.replace({ pathname: "/home" });
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter both email and password");
+      return;
+    }
+
+    try {
+      await signIn(email, password);
+      router.replace("/home");
+    } catch (error) {
+      Alert.alert(
+        "Login Failed",
+        error instanceof Error ? error.message : "Invalid email or password"
+      );
+    }
   };
 
   const goToSignup = () => {
@@ -101,10 +117,16 @@ export default function LoginScreen() {
                   style={({ pressed }) => [
                     styles.loginButton,
                     pressed && styles.loginButtonPressed,
+                    isLoading && styles.loginButtonDisabled,
                   ]}
                   onPress={handleLogin}
+                  disabled={isLoading}
                 >
-                  <Text style={styles.loginText}>Log in</Text>
+                  {isLoading ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <Text style={styles.loginText}>Log in</Text>
+                  )}
                 </Pressable>
               </View>
             </View>
@@ -205,6 +227,9 @@ const styles = StyleSheet.create({
   },
   loginButtonPressed: {
     opacity: 0.85,
+  },
+  loginButtonDisabled: {
+    opacity: 0.6,
   },
   loginText: {
     color: "#ffffff",

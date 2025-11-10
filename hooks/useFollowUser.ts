@@ -18,7 +18,7 @@ export function useFollowUser(userId: Id<"users"> | undefined) {
       setIsToggling(true);
       await toggleFollowMutation({ userId });
     } catch (error) {
-      console.error("Error toggling follow:", error);
+      // Ignore errors
     } finally {
       setIsToggling(false);
     }

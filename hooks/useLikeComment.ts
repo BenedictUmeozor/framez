@@ -18,7 +18,7 @@ export function useLikeComment(commentId: Id<"comments"> | undefined) {
       setIsToggling(true);
       await toggleLikeMutation({ commentId });
     } catch (error) {
-      console.error("Error toggling comment like:", error);
+      // Ignore errors
     } finally {
       setIsToggling(false);
     }

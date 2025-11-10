@@ -68,7 +68,6 @@ export function useCreatePost() {
       const { storageId } = await result.json();
       return storageId;
     } catch (error) {
-      console.error("Error uploading image:", error);
       throw new Error("Failed to upload image");
     }
   };
@@ -89,7 +88,6 @@ export function useCreatePost() {
 
       return postId;
     } catch (error) {
-      console.error("Error creating post:", error);
       throw error;
     } finally {
       setIsUploading(false);

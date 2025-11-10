@@ -22,7 +22,6 @@ export function useDeletePost() {
 
       return true;
     } catch (error) {
-      console.error("Error deleting post:", error);
       Toast.show({
         type: "error",
         text1: "Failed to delete post",

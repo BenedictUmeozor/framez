@@ -34,8 +34,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   const [isLoading, setIsLoading] = useState(true);
 
-  // Update loading state when user data is fetched
-  // currentUser will be undefined while loading, null if not authenticated, or the user object if authenticated
   useEffect(() => {
     if (currentUser !== undefined) {
       setIsLoading(false);
@@ -52,9 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       formData.append("flow", "signIn");
 
       await convexSignIn("password", formData);
-      // Convex Auth automatically persists the session via the storage adapter
     } catch (error) {
-      // Parse error message for better user feedback
       let errorMessage = "Invalid email or password";
       
       if (error instanceof Error) {
@@ -89,10 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       formData.append("flow", "signUp");
 
       await convexSignIn("password", formData);
-      // Convex Auth automatically persists the session via the storage adapter
 
-      // Update user profile after successful signup
-      // We'll retry a few times in case the user document isn't ready yet
       let retries = 0;
       const maxRetries = 3;
       
@@ -108,13 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (err) {
           retries++;
           if (retries >= maxRetries) {
-            // If we can't update the profile, that's okay - they can do it later
-            console.warn("Could not update profile immediately:", err);
+            break;
           }
         }
       }
     } catch (error) {
-      // Parse error message for better user feedback
       let errorMessage = "Could not create account";
       
       if (error instanceof Error) {
@@ -140,9 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       await convexSignOut();
-      // Convex Auth automatically clears the session from storage
     } catch (error) {
-      console.error("Sign out error:", error);
       throw error;
     } finally {
       setIsLoading(false);

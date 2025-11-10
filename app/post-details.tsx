@@ -1,3 +1,4 @@
+import { CommentCard } from "@/components/CommentCard";
 import { EditPostModal } from "@/components/EditPostModal";
 import { PostMenu } from "@/components/PostMenu";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,7 +7,6 @@ import { Id } from "@/convex/_generated/dataModel";
 import { useCreateComment } from "@/hooks/useCreateComment";
 import { useDeletePost } from "@/hooks/useDeletePost";
 import { useFollowUser } from "@/hooks/useFollowUser";
-import { useLikeComment } from "@/hooks/useLikeComment";
 import { useLikePost } from "@/hooks/useLikePost";
 import { useUpdatePost } from "@/hooks/useUpdatePost";
 import { Ionicons } from "@expo/vector-icons";
@@ -41,59 +41,6 @@ function formatTimestamp(timestamp: number): string {
   if (hours > 0) return `${hours}h ago`;
   if (minutes > 0) return `${minutes}m ago`;
   return "Just now";
-}
-
-// Comment card component with like functionality
-function CommentCard({ item }: { item: any }) {
-  const { hasLiked, toggleLike, isToggling } = useLikeComment(item._id);
-
-  const handleLikePress = () => {
-    toggleLike();
-  };
-
-  return (
-    <View style={styles.commentCard}>
-      {item.author?.avatarUrl ? (
-        <Image
-          source={{ uri: item.author.avatarUrl }}
-          style={styles.commentAvatar}
-        />
-      ) : (
-        <View style={[styles.commentAvatar, styles.avatarPlaceholder]}>
-          <Ionicons name="person" size={16} color="#8a8a8a" />
-        </View>
-      )}
-      <View style={styles.commentContent}>
-        <View style={styles.commentHeaderRow}>
-          <Text style={styles.commentAuthor}>
-            {item.author?.name || "Unknown User"}
-          </Text>
-          <Text style={styles.commentTimestamp}>
-            {formatTimestamp(item._creationTime)}
-            {item.editedAt && " • edited"}
-          </Text>
-        </View>
-        <Text style={styles.commentText}>{item.text}</Text>
-        {(item.likesCount ?? 0) > 0 && (
-          <Text style={styles.commentLikesCount}>
-            {item.likesCount} {item.likesCount === 1 ? "like" : "likes"}
-          </Text>
-        )}
-      </View>
-      <Pressable
-        style={styles.commentAction}
-        hitSlop={6}
-        onPress={handleLikePress}
-        disabled={isToggling}
-      >
-        <Ionicons
-          name={hasLiked ? "heart" : "heart-outline"}
-          size={18}
-          color={hasLiked ? "#ff3b30" : "#727272"}
-        />
-      </Pressable>
-    </View>
-  );
 }
 
 export default function PostDetailsScreen() {
@@ -357,7 +304,11 @@ export default function PostDetailsScreen() {
             {comments && comments.length > 0 ? (
               <View style={styles.commentList}>
                 {comments.map((item) => (
-                  <CommentCard key={item._id} item={item} />
+                  <CommentCard
+                    key={item._id}
+                    item={item}
+                    formatTimestamp={formatTimestamp}
+                  />
                 ))}
               </View>
             ) : (
@@ -579,47 +530,6 @@ const styles = StyleSheet.create({
   },
   commentList: {
     gap: 18,
-  },
-  commentCard: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  commentAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-  commentContent: {
-    flex: 1,
-    gap: 6,
-  },
-  commentHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  commentAuthor: {
-    color: "#ffffff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  commentTimestamp: {
-    color: "#8a8a8a",
-    fontSize: 12,
-  },
-  commentText: {
-    color: "#d7d7d7",
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  commentLikesCount: {
-    color: "#8a8a8a",
-    fontSize: 12,
-    marginTop: 4,
-  },
-  commentAction: {
-    padding: 4,
-    alignSelf: "flex-start",
   },
   composerContainer: {
     flexDirection: "row",

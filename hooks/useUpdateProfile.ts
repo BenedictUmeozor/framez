@@ -48,7 +48,6 @@ export function useUpdateProfile() {
       const { storageId } = await result.json();
       return storageId;
     } catch (error) {
-      console.error("Error uploading avatar:", error);
       throw new Error("Failed to upload avatar");
     }
   };
@@ -74,7 +73,6 @@ export function useUpdateProfile() {
         avatarStorageId,
       });
     } catch (error) {
-      console.error("Error updating profile:", error);
       throw error;
     } finally {
       setIsUpdating(false);

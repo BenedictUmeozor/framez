@@ -22,7 +22,6 @@ export function useUpdatePost() {
 
       return true;
     } catch (error) {
-      console.error("Error updating post:", error);
       Toast.show({
         type: "error",
         text1: "Failed to update post",

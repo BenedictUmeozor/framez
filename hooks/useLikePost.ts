@@ -18,7 +18,7 @@ export function useLikePost(postId: Id<"posts"> | undefined) {
       setIsToggling(true);
       await toggleLikeMutation({ postId });
     } catch (error) {
-      console.error("Error toggling like:", error);
+      // Ignore errors
     } finally {
       setIsToggling(false);
     }

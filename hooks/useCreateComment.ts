@@ -35,7 +35,6 @@ export function useCreateComment() {
 
       return commentId;
     } catch (error) {
-      console.error("Error creating comment:", error);
       Toast.show({
         type: "error",
         text1: "Failed to post comment",

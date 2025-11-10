@@ -1,5 +1,6 @@
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { useFollowUser } from "@/hooks/useFollowUser";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "convex/react";
 import { Image } from "expo-image";
@@ -25,6 +26,9 @@ const formatNumber = (value: number) => {
 export default function OtherProfileScreen() {
   const router = useRouter();
   const { userId } = useLocalSearchParams<{ userId: string }>();
+  const { isFollowing, toggleFollow, isToggling } = useFollowUser(
+    userId ? (userId as Id<"users">) : undefined
+  );
 
   // Fetch user data and their posts
   const user = useQuery(
@@ -122,23 +126,60 @@ export default function OtherProfileScreen() {
                   <Text style={styles.statValue}>{posts.length}</Text>
                   <Text style={styles.statLabel}>Posts</Text>
                 </View>
-                <View style={styles.statItem}>
+                <Pressable
+                  style={styles.statItem}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/followers",
+                      params: { userId: user._id },
+                    })
+                  }
+                  hitSlop={8}
+                >
                   <Text style={styles.statValue}>
                     {formatNumber(user.followersCount ?? 0)}
                   </Text>
                   <Text style={styles.statLabel}>Followers</Text>
-                </View>
-                <View style={styles.statItem}>
+                </Pressable>
+                <Pressable
+                  style={styles.statItem}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/following",
+                      params: { userId: user._id },
+                    })
+                  }
+                  hitSlop={8}
+                >
                   <Text style={styles.statValue}>
                     {formatNumber(user.followingCount ?? 0)}
                   </Text>
                   <Text style={styles.statLabel}>Following</Text>
-                </View>
+                </Pressable>
               </View>
 
               <View style={styles.actionsRowSingle}>
-                <Pressable style={styles.primaryButton} hitSlop={6}>
-                  <Text style={styles.primaryButtonText}>Follow</Text>
+                <Pressable
+                  style={[
+                    styles.primaryButton,
+                    isFollowing && styles.followingButton,
+                  ]}
+                  hitSlop={6}
+                  onPress={toggleFollow}
+                  disabled={isToggling}
+                >
+                  {isToggling ? (
+                    <ActivityIndicator size="small" color="#050505" />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.primaryButtonText,
+                        isFollowing && styles.followingButtonText,
+                      ]}
+                    >
+                      {isFollowing ? "Following" : "Follow"}
+                    </Text>
+                  )}
                 </Pressable>
               </View>
             </View>
@@ -318,10 +359,18 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: "#34c759",
   },
+  followingButton: {
+    backgroundColor: "#1a1a1a",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+  },
   primaryButtonText: {
     color: "#050505",
     fontSize: 15,
     fontWeight: "700",
+  },
+  followingButtonText: {
+    color: "#ffffff",
   },
   sectionHeader: {
     flexDirection: "row",

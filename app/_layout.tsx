@@ -37,6 +37,8 @@ export default function RootLayout() {
           <Stack.Screen name="edit-profile" />
           <Stack.Screen name="settings" />
           <Stack.Screen name="other-profile" />
+          <Stack.Screen name="followers" />
+          <Stack.Screen name="following" />
         </Stack>
         <Toast />
       </AuthProvider>

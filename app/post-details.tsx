@@ -5,6 +5,7 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useCreateComment } from "@/hooks/useCreateComment";
 import { useDeletePost } from "@/hooks/useDeletePost";
+import { useFollowUser } from "@/hooks/useFollowUser";
 import { useLikeComment } from "@/hooks/useLikeComment";
 import { useLikePost } from "@/hooks/useLikePost";
 import { useUpdatePost } from "@/hooks/useUpdatePost";
@@ -113,6 +114,9 @@ export default function PostDetailsScreen() {
     api.posts.getPostById,
     postId ? { postId: postId as Id<"posts"> } : "skip"
   );
+  
+  const { isFollowing, toggleFollow, isToggling: isTogglingFollow } =
+    useFollowUser(post?.authorId);
   const comments = useQuery(
     api.comments.getCommentsByPostId,
     postId ? { postId: postId as Id<"posts"> } : "skip"
@@ -267,14 +271,29 @@ export default function PostDetailsScreen() {
               </View>
               {!isOwnPost && (
                 <Pressable
-                  style={styles.followButton}
+                  style={[
+                    styles.followButton,
+                    isFollowing && styles.followingButton,
+                  ]}
                   hitSlop={8}
                   onPress={(e) => {
                     e.stopPropagation();
-                    // TODO: Implement follow functionality
+                    toggleFollow();
                   }}
+                  disabled={isTogglingFollow}
                 >
-                  <Text style={styles.followText}>Follow</Text>
+                  {isTogglingFollow ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.followText,
+                        isFollowing && styles.followingText,
+                      ]}
+                    >
+                      {isFollowing ? "Following" : "Follow"}
+                    </Text>
+                  )}
                 </Pressable>
               )}
             </Pressable>
@@ -488,12 +507,20 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: "#181818",
+    backgroundColor: "#34c759",
+  },
+  followingButton: {
+    backgroundColor: "#1a1a1a",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
   },
   followText: {
-    color: "#ffffff",
+    color: "#050505",
     fontSize: 13,
     fontWeight: "600",
+  },
+  followingText: {
+    color: "#ffffff",
   },
   postImage: {
     width: "100%",

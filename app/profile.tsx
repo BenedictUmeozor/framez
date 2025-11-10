@@ -116,18 +116,36 @@ export default function ProfileScreen() {
                   </Text>
                   <Text style={styles.statLabel}>Posts</Text>
                 </View>
-                <View style={styles.statItem}>
+                <Pressable
+                  style={styles.statItem}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/followers",
+                      params: { userId: user._id },
+                    })
+                  }
+                  hitSlop={8}
+                >
                   <Text style={styles.statValue}>
                     {formatNumber(user.followersCount || 0)}
                   </Text>
                   <Text style={styles.statLabel}>Followers</Text>
-                </View>
-                <View style={styles.statItem}>
+                </Pressable>
+                <Pressable
+                  style={styles.statItem}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/following",
+                      params: { userId: user._id },
+                    })
+                  }
+                  hitSlop={8}
+                >
                   <Text style={styles.statValue}>
                     {formatNumber(user.followingCount || 0)}
                   </Text>
                   <Text style={styles.statLabel}>Following</Text>
-                </View>
+                </Pressable>
               </View>
 
               <View style={styles.actionsRow}>

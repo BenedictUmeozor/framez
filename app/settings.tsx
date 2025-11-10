@@ -4,14 +4,14 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useMemo, useState } from "react";
 import {
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    View,
-    useColorScheme,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -67,6 +67,14 @@ export default function SettingsScreen() {
   const accountActions = useMemo(() => ACCOUNT_ACTIONS, []);
   const supportActions = useMemo(() => SUPPORT_ACTIONS, []);
 
+  const handleComingSoon = (feature: string) => {
+    Alert.alert(
+      "Coming Soon",
+      `${feature} will be available in a future update.`,
+      [{ text: "OK" }]
+    );
+  };
+
   const handleLogout = () => {
     Alert.alert(
       "Log Out",
@@ -114,6 +122,8 @@ export default function SettingsScreen() {
                   onPress={() => {
                     if (action.to) {
                       router.push({ pathname: action.to });
+                    } else {
+                      handleComingSoon(action.label);
                     }
                   }}
                 >
@@ -150,7 +160,9 @@ export default function SettingsScreen() {
               </View>
               <Switch
                 value={notificationsEnabled}
-                onValueChange={setNotificationsEnabled}
+                onValueChange={(value) => {
+                  handleComingSoon("Push notifications");
+                }}
                 thumbColor="#ffffff"
                 trackColor={{ false: "#2f2f2f", true: "#34c759" }}
               />
@@ -168,7 +180,9 @@ export default function SettingsScreen() {
               </View>
               <Switch
                 value={darkMode}
-                onValueChange={setDarkMode}
+                onValueChange={(value) => {
+                  handleComingSoon("Dark mode");
+                }}
                 thumbColor="#ffffff"
                 trackColor={{ false: "#2f2f2f", true: "#34c759" }}
               />
@@ -186,7 +200,7 @@ export default function SettingsScreen() {
                   key={action.id}
                   style={[styles.row, !isLast && styles.rowDivider]}
                   hitSlop={6}
-                  onPress={() => {}}
+                  onPress={() => handleComingSoon(action.label)}
                 >
                   <View style={styles.rowLeft}>
                     <View style={styles.iconAvatar}>

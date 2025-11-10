@@ -25,6 +25,7 @@ export const createComment = mutation({
       postId: args.postId,
       authorId: userId,
       text: args.text.trim(),
+      likesCount: 0,
     });
 
     // Increment the post's comment count

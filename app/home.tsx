@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/convex/_generated/api";
+import { useLikePost } from "@/hooks/useLikePost";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "convex/react";
 import { Image } from "expo-image";
@@ -31,6 +32,118 @@ function formatTimestamp(timestamp: number): string {
   return "Just now";
 }
 
+// Post card component with like functionality
+function PostCard({
+  item,
+  user,
+  router,
+}: {
+  item: any;
+  user: any;
+  router: any;
+}) {
+  const { hasLiked, toggleLike, isToggling } = useLikePost(item._id);
+
+  const openPostDetails = () =>
+    router.push({
+      pathname: "/post-details",
+      params: { postId: item._id },
+    });
+
+  const isOwnPost = user?._id === item.authorId;
+
+  const openAuthorProfile = () => {
+    if (isOwnPost) {
+      router.push({ pathname: "/profile" });
+    } else {
+      router.push({ pathname: "/other-profile" });
+    }
+  };
+
+  const handleLikePress = (event: any) => {
+    event.stopPropagation();
+    toggleLike();
+  };
+
+  return (
+    <Pressable style={styles.card} onPress={openPostDetails} hitSlop={4}>
+      <Pressable
+        style={styles.cardHeader}
+        onPress={(event) => {
+          event.stopPropagation();
+          openAuthorProfile();
+        }}
+        hitSlop={4}
+      >
+        <View style={styles.avatar}>
+          {item.author?.avatarUrl ? (
+            <Image
+              source={{ uri: item.author.avatarUrl }}
+              style={styles.avatarImage}
+            />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Ionicons name="person" size={20} color="#8a8a8a" />
+            </View>
+          )}
+        </View>
+        <View style={styles.authorBlock}>
+          <Text style={styles.authorName}>
+            {item.author?.name || "Unknown User"}
+          </Text>
+          <Text style={styles.timestamp}>
+            {formatTimestamp(item._creationTime)}
+          </Text>
+        </View>
+        <Pressable
+          style={styles.moreButton}
+          hitSlop={8}
+          onPress={(event) => {
+            event.stopPropagation();
+          }}
+        >
+          <Ionicons name="ellipsis-horizontal" size={20} color="#b3b3b3" />
+        </Pressable>
+      </Pressable>
+
+      {item.caption && <Text style={styles.caption}>{item.caption}</Text>}
+
+      {item.imageUrl && (
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={styles.postImage}
+          contentFit="cover"
+        />
+      )}
+
+      <View style={styles.actionsRow}>
+        <View style={styles.actionsLeft}>
+          <Pressable
+            style={styles.actionButton}
+            hitSlop={8}
+            onPress={handleLikePress}
+            disabled={isToggling}
+          >
+            <Ionicons
+              name={hasLiked ? "heart" : "heart-outline"}
+              size={22}
+              color={hasLiked ? "#ff3b30" : "#ffffff"}
+            />
+            <Text style={styles.actionText}>{item.likesCount}</Text>
+          </Pressable>
+          <Pressable style={styles.actionButton} hitSlop={8}>
+            <Ionicons name="chatbubble-outline" size={22} color="#ffffff" />
+            <Text style={styles.actionText}>{item.commentsCount}</Text>
+          </Pressable>
+        </View>
+        <Pressable style={styles.saveButton} hitSlop={8}>
+          <Ionicons name="bookmark-outline" size={22} color="#ffffff" />
+        </Pressable>
+      </View>
+    </Pressable>
+  );
+}
+
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
@@ -38,88 +151,7 @@ export default function HomeScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: NonNullable<typeof posts>[number] }) => {
-      const openPostDetails = () =>
-        router.push({
-          pathname: "/post-details",
-          params: { postId: item._id },
-        });
-      const isOwnPost = user?._id === item.authorId;
-      const openAuthorProfile = () => {
-        if (isOwnPost) {
-          router.push({ pathname: "/profile" });
-        } else {
-          router.push({ pathname: "/other-profile" });
-        }
-      };
-
-      return (
-        <Pressable style={styles.card} onPress={openPostDetails} hitSlop={4}>
-          <Pressable
-            style={styles.cardHeader}
-            onPress={(event) => {
-              event.stopPropagation();
-              openAuthorProfile();
-            }}
-            hitSlop={4}
-          >
-            <View style={styles.avatar}>
-              {item.author?.avatarUrl ? (
-                <Image
-                  source={{ uri: item.author.avatarUrl }}
-                  style={styles.avatarImage}
-                />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Ionicons name="person" size={20} color="#8a8a8a" />
-                </View>
-              )}
-            </View>
-            <View style={styles.authorBlock}>
-              <Text style={styles.authorName}>
-                {item.author?.name || "Unknown User"}
-              </Text>
-              <Text style={styles.timestamp}>
-                {formatTimestamp(item._creationTime)}
-              </Text>
-            </View>
-            <Pressable
-              style={styles.moreButton}
-              hitSlop={8}
-              onPress={(event) => {
-                event.stopPropagation();
-              }}
-            >
-              <Ionicons name="ellipsis-horizontal" size={20} color="#b3b3b3" />
-            </Pressable>
-          </Pressable>
-
-          {item.caption && <Text style={styles.caption}>{item.caption}</Text>}
-
-          {item.imageUrl && (
-            <Image
-              source={{ uri: item.imageUrl }}
-              style={styles.postImage}
-              contentFit="cover"
-            />
-          )}
-
-          <View style={styles.actionsRow}>
-            <View style={styles.actionsLeft}>
-              <Pressable style={styles.actionButton} hitSlop={8}>
-                <Ionicons name="heart-outline" size={22} color="#ffffff" />
-                <Text style={styles.actionText}>{item.likesCount}</Text>
-              </Pressable>
-              <Pressable style={styles.actionButton} hitSlop={8}>
-                <Ionicons name="chatbubble-outline" size={22} color="#ffffff" />
-                <Text style={styles.actionText}>{item.commentsCount}</Text>
-              </Pressable>
-            </View>
-            <Pressable style={styles.saveButton} hitSlop={8}>
-              <Ionicons name="bookmark-outline" size={22} color="#ffffff" />
-            </Pressable>
-          </View>
-        </Pressable>
-      );
+      return <PostCard item={item} user={user} router={router} />;
     },
     [router, user]
   );

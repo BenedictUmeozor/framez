@@ -2,6 +2,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useCreateComment } from "@/hooks/useCreateComment";
+import { useLikeComment } from "@/hooks/useLikeComment";
+import { useLikePost } from "@/hooks/useLikePost";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "convex/react";
 import { Image } from "expo-image";
@@ -36,12 +38,67 @@ function formatTimestamp(timestamp: number): string {
   return "Just now";
 }
 
+// Comment card component with like functionality
+function CommentCard({ item }: { item: any }) {
+  const { hasLiked, toggleLike, isToggling } = useLikeComment(item._id);
+
+  const handleLikePress = () => {
+    toggleLike();
+  };
+
+  return (
+    <View style={styles.commentCard}>
+      {item.author?.avatarUrl ? (
+        <Image
+          source={{ uri: item.author.avatarUrl }}
+          style={styles.commentAvatar}
+        />
+      ) : (
+        <View style={[styles.commentAvatar, styles.avatarPlaceholder]}>
+          <Ionicons name="person" size={16} color="#8a8a8a" />
+        </View>
+      )}
+      <View style={styles.commentContent}>
+        <View style={styles.commentHeaderRow}>
+          <Text style={styles.commentAuthor}>
+            {item.author?.name || "Unknown User"}
+          </Text>
+          <Text style={styles.commentTimestamp}>
+            {formatTimestamp(item._creationTime)}
+          </Text>
+        </View>
+        <Text style={styles.commentText}>{item.text}</Text>
+        {(item.likesCount ?? 0) > 0 && (
+          <Text style={styles.commentLikesCount}>
+            {item.likesCount} {item.likesCount === 1 ? "like" : "likes"}
+          </Text>
+        )}
+      </View>
+      <Pressable
+        style={styles.commentAction}
+        hitSlop={6}
+        onPress={handleLikePress}
+        disabled={isToggling}
+      >
+        <Ionicons
+          name={hasLiked ? "heart" : "heart-outline"}
+          size={18}
+          color={hasLiked ? "#ff3b30" : "#727272"}
+        />
+      </Pressable>
+    </View>
+  );
+}
+
 export default function PostDetailsScreen() {
   const router = useRouter();
   const { postId } = useLocalSearchParams<{ postId: string }>();
   const { user } = useAuth();
   const [comment, setComment] = useState("");
   const { createComment, isCreating } = useCreateComment();
+  const { hasLiked, toggleLike, isToggling } = useLikePost(
+    postId ? (postId as Id<"posts">) : undefined
+  );
 
   // Fetch post and comments
   const post = useQuery(
@@ -183,8 +240,17 @@ export default function PostDetailsScreen() {
 
             <View style={styles.statsRow}>
               <View style={styles.statsLeft}>
-                <Pressable style={styles.statButton} hitSlop={8}>
-                  <Ionicons name="heart-outline" size={22} color="#ffffff" />
+                <Pressable
+                  style={styles.statButton}
+                  hitSlop={8}
+                  onPress={toggleLike}
+                  disabled={isToggling}
+                >
+                  <Ionicons
+                    name={hasLiked ? "heart" : "heart-outline"}
+                    size={22}
+                    color={hasLiked ? "#ff3b30" : "#ffffff"}
+                  />
                   <Text style={styles.statText}>{post.likesCount}</Text>
                 </Pressable>
                 <Pressable style={styles.statButton} hitSlop={8}>
@@ -214,41 +280,7 @@ export default function PostDetailsScreen() {
             {comments && comments.length > 0 ? (
               <View style={styles.commentList}>
                 {comments.map((item) => (
-                  <View key={item._id} style={styles.commentCard}>
-                    {item.author?.avatarUrl ? (
-                      <Image
-                        source={{ uri: item.author.avatarUrl }}
-                        style={styles.commentAvatar}
-                      />
-                    ) : (
-                      <View
-                        style={[
-                          styles.commentAvatar,
-                          styles.avatarPlaceholder,
-                        ]}
-                      >
-                        <Ionicons name="person" size={16} color="#8a8a8a" />
-                      </View>
-                    )}
-                    <View style={styles.commentContent}>
-                      <View style={styles.commentHeaderRow}>
-                        <Text style={styles.commentAuthor}>
-                          {item.author?.name || "Unknown User"}
-                        </Text>
-                        <Text style={styles.commentTimestamp}>
-                          {formatTimestamp(item._creationTime)}
-                        </Text>
-                      </View>
-                      <Text style={styles.commentText}>{item.text}</Text>
-                    </View>
-                    <Pressable style={styles.commentAction} hitSlop={6}>
-                      <Ionicons
-                        name="heart-outline"
-                        size={18}
-                        color="#727272"
-                      />
-                    </Pressable>
-                  </View>
+                  <CommentCard key={item._id} item={item} />
                 ))}
               </View>
             ) : (
@@ -486,6 +518,11 @@ const styles = StyleSheet.create({
     color: "#d7d7d7",
     fontSize: 14,
     lineHeight: 20,
+  },
+  commentLikesCount: {
+    color: "#8a8a8a",
+    fontSize: 12,
+    marginTop: 4,
   },
   commentAction: {
     padding: 4,

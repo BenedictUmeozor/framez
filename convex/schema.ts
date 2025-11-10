@@ -46,6 +46,7 @@ export default defineSchema({
     postId: v.id("posts"),
     authorId: v.id("users"),
     text: v.string(),
+    likesCount: v.optional(v.number()),
   })
     .index("by_post", ["postId"])
     .index("by_author", ["authorId"]),
@@ -58,6 +59,15 @@ export default defineSchema({
     .index("by_post", ["postId"])
     .index("by_user", ["userId"])
     .index("by_post_and_user", ["postId", "userId"]),
+
+  // Comment likes table - stores comment likes
+  commentLikes: defineTable({
+    commentId: v.id("comments"),
+    userId: v.id("users"),
+  })
+    .index("by_comment", ["commentId"])
+    .index("by_user", ["userId"])
+    .index("by_comment_and_user", ["commentId", "userId"]),
 
   // Follows table - stores follower/following relationships
   follows: defineTable({

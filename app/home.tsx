@@ -63,7 +63,10 @@ function PostCard({
     if (isOwnPost) {
       router.push({ pathname: "/profile" });
     } else {
-      router.push({ pathname: "/other-profile" });
+      router.push({
+        pathname: "/other-profile",
+        params: { userId: item.authorId },
+      });
     }
   };
 

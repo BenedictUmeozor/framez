@@ -1,9 +1,12 @@
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { Ionicons } from "@expo/vector-icons";
+import { useQuery } from "convex/react";
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useMemo } from "react";
 import {
+    ActivityIndicator,
     FlatList,
     Pressable,
     StyleSheet,
@@ -11,64 +14,6 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const USER = {
-  name: "Mira Kalu",
-  username: "@miraframe",
-  bio: "Creative director & color enthusiast. Photographing Lagos streets and stories.",
-  avatar:
-    "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80",
-  stats: {
-    posts: 64,
-    followers: 9800,
-    following: 412,
-  },
-};
-
-const POSTS = [
-  {
-    id: "p1",
-    image:
-      "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80",
-    likes: 274,
-    comments: 42,
-  },
-  {
-    id: "p2",
-    image:
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80",
-    likes: 182,
-    comments: 18,
-  },
-  {
-    id: "p3",
-    image:
-      "https://images.unsplash.com/photo-1510546020578-a35ae7135a71?auto=format&fit=crop&w=900&q=80",
-    likes: 321,
-    comments: 28,
-  },
-  {
-    id: "p4",
-    image:
-      "https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?auto=format&fit=crop&w=900&q=80",
-    likes: 196,
-    comments: 25,
-  },
-  {
-    id: "p5",
-    image:
-      "https://images.unsplash.com/photo-1511765224389-37f0e77cf0eb?auto=format&fit=crop&w=900&q=80",
-    likes: 257,
-    comments: 34,
-  },
-  {
-    id: "p6",
-    image:
-      "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=900&q=80",
-    likes: 143,
-    comments: 17,
-  },
-];
 
 const formatNumber = (value: number) => {
   if (value >= 1000) {
@@ -79,47 +24,114 @@ const formatNumber = (value: number) => {
 
 export default function OtherProfileScreen() {
   const router = useRouter();
-  const posts = useMemo(() => POSTS, []);
+  const { userId } = useLocalSearchParams<{ userId: string }>();
+
+  // Fetch user data and their posts
+  const user = useQuery(
+    api.users.getUserById,
+    userId ? { userId: userId as Id<"users"> } : "skip"
+  );
+  const posts = useQuery(
+    api.posts.getPostsByUserId,
+    userId ? { userId: userId as Id<"users"> } : "skip"
+  );
+
+  // Loading state
+  if (user === undefined || posts === undefined) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+        <StatusBar style="light" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#34c759" />
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // User not found
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+        <StatusBar style="light" />
+        <View style={styles.header}>
+          <Pressable
+            style={styles.topIcon}
+            hitSlop={8}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="chevron-back" size={22} color="#ffffff" />
+          </Pressable>
+          <Text style={styles.topTitle}>Profile</Text>
+          <View style={styles.topIcon} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <Ionicons name="person-outline" size={64} color="#3a3a3a" />
+          <Text style={styles.loadingText}>User not found</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <StatusBar style="light" />
       <FlatList
         data={posts}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item._id}
         numColumns={3}
-        columnWrapperStyle={styles.gridRow}
+        columnWrapperStyle={posts.length > 0 ? styles.gridRow : undefined}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.headerContainer}>
             <View style={styles.topBar}>
-              <Pressable style={styles.topIcon} hitSlop={8} onPress={() => router.back()}>
+              <Pressable
+                style={styles.topIcon}
+                hitSlop={8}
+                onPress={() => router.back()}
+              >
                 <Ionicons name="chevron-back" size={22} color="#ffffff" />
               </Pressable>
-              <Text style={styles.topTitle}>{USER.name}</Text>
+              <Text style={styles.topTitle}>{user.name || "User"}</Text>
               <Pressable style={styles.topIcon} hitSlop={8} onPress={() => {}}>
-                <Ionicons name="ellipsis-horizontal" size={20} color="#ffffff" />
+                <Ionicons
+                  name="ellipsis-horizontal"
+                  size={20}
+                  color="#ffffff"
+                />
               </Pressable>
             </View>
 
             <View style={styles.profileSection}>
-              <Image source={{ uri: USER.avatar }} style={styles.avatar} />
-              <Text style={styles.name}>{USER.name}</Text>
-              <Text style={styles.username}>{USER.username}</Text>
-              <Text style={styles.bio}>{USER.bio}</Text>
+              {user.avatarUrl ? (
+                <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                  <Ionicons name="person" size={40} color="#8a8a8a" />
+                </View>
+              )}
+              <Text style={styles.name}>{user.name || "Unknown User"}</Text>
+              {user.username && (
+                <Text style={styles.username}>@{user.username}</Text>
+              )}
+              {user.bio && <Text style={styles.bio}>{user.bio}</Text>}
 
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{USER.stats.posts}</Text>
+                  <Text style={styles.statValue}>{posts.length}</Text>
                   <Text style={styles.statLabel}>Posts</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{formatNumber(USER.stats.followers)}</Text>
+                  <Text style={styles.statValue}>
+                    {formatNumber(user.followersCount ?? 0)}
+                  </Text>
                   <Text style={styles.statLabel}>Followers</Text>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{formatNumber(USER.stats.following)}</Text>
+                  <Text style={styles.statValue}>
+                    {formatNumber(user.followingCount ?? 0)}
+                  </Text>
                   <Text style={styles.statLabel}>Following</Text>
                 </View>
               </View>
@@ -132,28 +144,48 @@ export default function OtherProfileScreen() {
             </View>
 
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Recent posts</Text>
+              <Text style={styles.sectionTitle}>
+                {posts.length > 0 ? "Recent posts" : "No posts yet"}
+              </Text>
             </View>
           </View>
         }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name="images-outline" size={64} color="#3a3a3a" />
+            <Text style={styles.emptyText}>No posts to show</Text>
+          </View>
+        }
         renderItem={({ item }) => (
-          <Pressable 
-            style={styles.gridItem} 
-            onPress={() => router.push({ 
-              pathname: "/post-details",
-              params: { postId: item.id }
-            })} 
+          <Pressable
+            style={styles.gridItem}
+            onPress={() =>
+              router.push({
+                pathname: "/post-details",
+                params: { postId: item._id },
+              })
+            }
             hitSlop={4}
           >
-            <Image source={{ uri: item.image }} style={styles.gridImage} contentFit="cover" />
+            {item.imageUrl ? (
+              <Image
+                source={{ uri: item.imageUrl }}
+                style={styles.gridImage}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={styles.gridImagePlaceholder}>
+                <Ionicons name="image-outline" size={32} color="#3a3a3a" />
+              </View>
+            )}
             <View style={styles.gridOverlay}>
               <View style={styles.gridOverlayRow}>
                 <Ionicons name="heart" size={14} color="#ffffff" />
-                <Text style={styles.overlayText}>{item.likes}</Text>
+                <Text style={styles.overlayText}>{item.likesCount}</Text>
               </View>
               <View style={styles.gridOverlayRow}>
                 <Ionicons name="chatbubble" size={14} color="#ffffff" />
-                <Text style={styles.overlayText}>{item.comments}</Text>
+                <Text style={styles.overlayText}>{item.commentsCount}</Text>
               </View>
             </View>
           </Pressable>
@@ -167,6 +199,23 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#050505",
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+  },
+  loadingText: {
+    color: "#8a8a8a",
+    fontSize: 16,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 24,
+    paddingVertical: 16,
   },
   listContent: {
     paddingBottom: 120,
@@ -204,6 +253,21 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
+  },
+  avatarPlaceholder: {
+    backgroundColor: "#1a1a1a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 48,
+    gap: 16,
+  },
+  emptyText: {
+    color: "#8a8a8a",
+    fontSize: 15,
   },
   name: {
     color: "#ffffff",
@@ -284,6 +348,13 @@ const styles = StyleSheet.create({
   gridImage: {
     width: "100%",
     height: "100%",
+  },
+  gridImagePlaceholder: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#1a1a1a",
+    alignItems: "center",
+    justifyContent: "center",
   },
   gridOverlay: {
     position: "absolute",

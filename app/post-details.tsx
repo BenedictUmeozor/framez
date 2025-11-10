@@ -233,7 +233,20 @@ export default function PostDetailsScreen() {
               isLoading={isUpdating}
             />
 
-            <View style={styles.authorRow}>
+            <Pressable
+              style={styles.authorRow}
+              onPress={() => {
+                if (isOwnPost) {
+                  router.push({ pathname: "/profile" });
+                } else if (post.authorId) {
+                  router.push({
+                    pathname: "/other-profile",
+                    params: { userId: post.authorId },
+                  });
+                }
+              }}
+              hitSlop={4}
+            >
               {post.author?.avatarUrl ? (
                 <Image
                   source={{ uri: post.author.avatarUrl }}
@@ -253,11 +266,18 @@ export default function PostDetailsScreen() {
                 </Text>
               </View>
               {!isOwnPost && (
-                <Pressable style={styles.followButton} hitSlop={8}>
+                <Pressable
+                  style={styles.followButton}
+                  hitSlop={8}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    // TODO: Implement follow functionality
+                  }}
+                >
                   <Text style={styles.followText}>Follow</Text>
                 </Pressable>
               )}
-            </View>
+            </Pressable>
 
             {post.imageUrl && (
               <Image

@@ -98,6 +98,16 @@ export const deleteComment = mutation({
       throw new Error("Not authorized to delete this comment");
     }
 
+    // Delete associated comment likes
+    const commentLikes = await ctx.db
+      .query("commentLikes")
+      .withIndex("by_comment", (q) => q.eq("commentId", args.commentId))
+      .collect();
+    
+    for (const commentLike of commentLikes) {
+      await ctx.db.delete(commentLike._id);
+    }
+
     // Decrement the post's comment count
     const post = await ctx.db.get(comment.postId);
     if (post && post.commentsCount > 0) {
@@ -107,5 +117,39 @@ export const deleteComment = mutation({
     }
 
     await ctx.db.delete(args.commentId);
+  },
+});
+
+/**
+ * Update a comment
+ */
+export const updateComment = mutation({
+  args: {
+    commentId: v.id("comments"),
+    text: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    if (!args.text.trim()) {
+      throw new Error("Comment cannot be empty");
+    }
+
+    const comment = await ctx.db.get(args.commentId);
+    if (!comment) {
+      throw new Error("Comment not found");
+    }
+
+    if (comment.authorId !== userId) {
+      throw new Error("Not authorized to update this comment");
+    }
+
+    await ctx.db.patch(args.commentId, {
+      text: args.text.trim(),
+      editedAt: Date.now(),
+    });
   },
 });

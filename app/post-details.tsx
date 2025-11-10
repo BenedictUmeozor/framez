@@ -1,9 +1,13 @@
+import { EditPostModal } from "@/components/EditPostModal";
+import { PostMenu } from "@/components/PostMenu";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useCreateComment } from "@/hooks/useCreateComment";
+import { useDeletePost } from "@/hooks/useDeletePost";
 import { useLikeComment } from "@/hooks/useLikeComment";
 import { useLikePost } from "@/hooks/useLikePost";
+import { useUpdatePost } from "@/hooks/useUpdatePost";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "convex/react";
 import { Image } from "expo-image";
@@ -65,6 +69,7 @@ function CommentCard({ item }: { item: any }) {
           </Text>
           <Text style={styles.commentTimestamp}>
             {formatTimestamp(item._creationTime)}
+            {item.editedAt && " • edited"}
           </Text>
         </View>
         <Text style={styles.commentText}>{item.text}</Text>
@@ -95,10 +100,13 @@ export default function PostDetailsScreen() {
   const { postId } = useLocalSearchParams<{ postId: string }>();
   const { user } = useAuth();
   const [comment, setComment] = useState("");
+  const [editModalVisible, setEditModalVisible] = useState(false);
   const { createComment, isCreating } = useCreateComment();
   const { hasLiked, toggleLike, isToggling } = useLikePost(
     postId ? (postId as Id<"posts">) : undefined
   );
+  const { deletePost, isDeleting } = useDeletePost();
+  const { updatePost, isUpdating } = useUpdatePost();
 
   // Fetch post and comments
   const post = useQuery(
@@ -119,6 +127,23 @@ export default function PostDetailsScreen() {
     if (result) {
       setComment("");
     }
+  };
+
+  const handleEdit = () => {
+    setEditModalVisible(true);
+  };
+
+  const handleDelete = async () => {
+    if (!postId) return;
+    const success = await deletePost(postId as Id<"posts">);
+    if (success) {
+      router.back();
+    }
+  };
+
+  const handleSaveEdit = async (caption: string) => {
+    if (!postId) return false;
+    return await updatePost(postId as Id<"posts">, caption);
   };
 
   // Loading state
@@ -191,18 +216,22 @@ export default function PostDetailsScreen() {
                 <Ionicons name="chevron-back" size={22} color="#ffffff" />
               </Pressable>
               <Text style={styles.headerTitle}>Post</Text>
-              <Pressable
-                style={styles.headerButton}
-                hitSlop={10}
-                onPress={() => {}}
-              >
-                <Ionicons
-                  name="ellipsis-horizontal"
-                  size={20}
-                  color="#ffffff"
+              <View style={styles.headerButton}>
+                <PostMenu
+                  isOwner={isOwnPost}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
                 />
-              </Pressable>
+              </View>
             </View>
+
+            <EditPostModal
+              visible={editModalVisible}
+              currentCaption={post?.caption || ""}
+              onClose={() => setEditModalVisible(false)}
+              onSave={handleSaveEdit}
+              isLoading={isUpdating}
+            />
 
             <View style={styles.authorRow}>
               {post.author?.avatarUrl ? (
@@ -267,7 +296,16 @@ export default function PostDetailsScreen() {
               </Pressable>
             </View>
 
-            {post.caption && <Text style={styles.caption}>{post.caption}</Text>}
+            {post.caption && (
+              <View style={styles.captionContainer}>
+                <Text style={styles.caption}>{post.caption}</Text>
+                {post.editedAt && (
+                  <Text style={styles.editedText}>
+                    (edited)
+                  </Text>
+                )}
+              </View>
+            )}
 
             <View style={styles.commentHeader}>
               <Text style={styles.commentTitle}>Comments</Text>
@@ -465,10 +503,18 @@ const styles = StyleSheet.create({
   saveButton: {
     padding: 6,
   },
+  captionContainer: {
+    gap: 4,
+  },
   caption: {
     color: "#e7e7e7",
     fontSize: 15,
     lineHeight: 22,
+  },
+  editedText: {
+    color: "#8a8a8a",
+    fontSize: 12,
+    fontStyle: "italic",
   },
   commentHeader: {
     flexDirection: "row",

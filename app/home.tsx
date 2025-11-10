@@ -1,12 +1,16 @@
+import { EditPostModal } from "@/components/EditPostModal";
+import { PostMenu } from "@/components/PostMenu";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/convex/_generated/api";
+import { useDeletePost } from "@/hooks/useDeletePost";
 import { useLikePost } from "@/hooks/useLikePost";
+import { useUpdatePost } from "@/hooks/useUpdatePost";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "convex/react";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -43,6 +47,9 @@ function PostCard({
   router: any;
 }) {
   const { hasLiked, toggleLike, isToggling } = useLikePost(item._id);
+  const { deletePost, isDeleting } = useDeletePost();
+  const { updatePost, isUpdating } = useUpdatePost();
+  const [editModalVisible, setEditModalVisible] = useState(false);
 
   const openPostDetails = () =>
     router.push({
@@ -63,6 +70,18 @@ function PostCard({
   const handleLikePress = (event: any) => {
     event.stopPropagation();
     toggleLike();
+  };
+
+  const handleEdit = () => {
+    setEditModalVisible(true);
+  };
+
+  const handleDelete = async () => {
+    await deletePost(item._id);
+  };
+
+  const handleSaveEdit = async (caption: string) => {
+    return await updatePost(item._id, caption);
   };
 
   return (
@@ -95,18 +114,36 @@ function PostCard({
             {formatTimestamp(item._creationTime)}
           </Text>
         </View>
-        <Pressable
-          style={styles.moreButton}
-          hitSlop={8}
-          onPress={(event) => {
-            event.stopPropagation();
-          }}
+        <View
+          onStartShouldSetResponder={() => true}
+          onTouchEnd={(e) => e.stopPropagation()}
         >
-          <Ionicons name="ellipsis-horizontal" size={20} color="#b3b3b3" />
-        </Pressable>
+          <PostMenu
+            isOwner={isOwnPost}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        </View>
       </Pressable>
 
-      {item.caption && <Text style={styles.caption}>{item.caption}</Text>}
+      {item.caption && (
+        <View style={styles.captionContainer}>
+          <Text style={styles.caption}>{item.caption}</Text>
+          {item.editedAt && (
+            <Text style={styles.editedText}>
+              (edited)
+            </Text>
+          )}
+        </View>
+      )}
+
+      <EditPostModal
+        visible={editModalVisible}
+        currentCaption={item.caption || ""}
+        onClose={() => setEditModalVisible(false)}
+        onSave={handleSaveEdit}
+        isLoading={isUpdating}
+      />
 
       {item.imageUrl && (
         <Image
@@ -318,10 +355,18 @@ const styles = StyleSheet.create({
   moreButton: {
     padding: 4,
   },
+  captionContainer: {
+    gap: 4,
+  },
   caption: {
     color: "#e7e7e7",
     fontSize: 15,
     lineHeight: 22,
+  },
+  editedText: {
+    color: "#8a8a8a",
+    fontSize: 12,
+    fontStyle: "italic",
   },
   postImage: {
     width: "100%",

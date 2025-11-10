@@ -38,6 +38,7 @@ export default defineSchema({
     imageUrl: v.optional(v.string()),
     likesCount: v.number(),
     commentsCount: v.number(),
+    editedAt: v.optional(v.number()),
   })
     .index("by_author", ["authorId"]),
 
@@ -47,6 +48,7 @@ export default defineSchema({
     authorId: v.id("users"),
     text: v.string(),
     likesCount: v.optional(v.number()),
+    editedAt: v.optional(v.number()),
   })
     .index("by_post", ["postId"])
     .index("by_author", ["authorId"]),

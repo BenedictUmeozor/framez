@@ -159,17 +159,28 @@ export const deletePost = mutation({
       throw new Error("Not authorized to delete this post");
     }
 
-    // Delete associated comments
+    // Delete associated comments and their likes
     const comments = await ctx.db
       .query("comments")
       .withIndex("by_post", (q) => q.eq("postId", args.postId))
       .collect();
     
     for (const comment of comments) {
+      // Delete likes on this comment
+      const commentLikes = await ctx.db
+        .query("commentLikes")
+        .withIndex("by_comment", (q) => q.eq("commentId", comment._id))
+        .collect();
+      
+      for (const commentLike of commentLikes) {
+        await ctx.db.delete(commentLike._id);
+      }
+      
+      // Delete the comment
       await ctx.db.delete(comment._id);
     }
 
-    // Delete associated likes
+    // Delete associated post likes
     const likes = await ctx.db
       .query("likes")
       .withIndex("by_post", (q) => q.eq("postId", args.postId))
@@ -209,6 +220,7 @@ export const updatePostCaption = mutation({
 
     await ctx.db.patch(args.postId, {
       caption: args.caption,
+      editedAt: Date.now(),
     });
   },
 });

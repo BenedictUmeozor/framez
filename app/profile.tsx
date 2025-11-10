@@ -164,7 +164,12 @@ export default function ProfileScreen() {
         renderItem={({ item }) => (
           <Pressable
             style={styles.gridItem}
-            onPress={() => router.push({ pathname: "/post-details" })}
+            onPress={() =>
+              router.push({
+                pathname: "/post-details",
+                params: { postId: item._id },
+              })
+            }
             hitSlop={4}
           >
             {item.imageUrl ? (

@@ -1,14 +1,14 @@
-import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useMemo } from "react";
 import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
+    FlatList,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -137,7 +137,14 @@ export default function OtherProfileScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <Pressable style={styles.gridItem} onPress={() => router.push({ pathname: "/post-details" })} hitSlop={4}>
+          <Pressable 
+            style={styles.gridItem} 
+            onPress={() => router.push({ 
+              pathname: "/post-details",
+              params: { postId: item.id }
+            })} 
+            hitSlop={4}
+          >
             <Image source={{ uri: item.image }} style={styles.gridImage} contentFit="cover" />
             <View style={styles.gridOverlay}>
               <View style={styles.gridOverlayRow}>

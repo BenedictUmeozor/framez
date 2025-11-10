@@ -1,9 +1,15 @@
-import { Image } from "expo-image";
-import { StatusBar } from "expo-status-bar";
+import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import { useCreateComment } from "@/hooks/useCreateComment";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useQuery } from "convex/react";
+import { Image } from "expo-image";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,66 +21,96 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const POST = {
-  id: "1",
-  author: {
-    name: "Ayo Johnson",
-    avatar:
-      "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=120&q=80",
-  },
-  timestamp: "2h ago",
-  caption:
-    "Sunset hues hitting differently tonight 🌇\nShot on a manual film lens — loving the warm tones that rolled in as the light faded.",
-  image:
-    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
-  likes: 126,
-  comments: 14,
-};
+// Helper function to format timestamp
+function formatTimestamp(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp;
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
 
-const COMMENTS = [
-  {
-    id: "c1",
-    author: {
-      name: "Mira Kalu",
-      avatar:
-        "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=120&q=80",
-    },
-    text: "The glow in this frame is unreal! What lens were you using?",
-    timestamp: "1h ago",
-  },
-  {
-    id: "c2",
-    author: {
-      name: "Ken Ade",
-      avatar:
-        "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=120&q=80",
-    },
-    text: "Love the layering in those clouds 🔥",
-    timestamp: "38m ago",
-  },
-  {
-    id: "c3",
-    author: {
-      name: "Ira Ibeh",
-      avatar:
-        "https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&fit=crop&w=120&q=80",
-    },
-    text: "Framez inspo for tonight’s shoot — thanks for sharing!",
-    timestamp: "12m ago",
-  },
-];
+  if (days > 0) return `${days}d ago`;
+  if (hours > 0) return `${hours}h ago`;
+  if (minutes > 0) return `${minutes}m ago`;
+  return "Just now";
+}
 
 export default function PostDetailsScreen() {
   const router = useRouter();
+  const { postId } = useLocalSearchParams<{ postId: string }>();
+  const { user } = useAuth();
   const [comment, setComment] = useState("");
+  const { createComment, isCreating } = useCreateComment();
 
-  const comments = useMemo(() => COMMENTS, []);
+  // Fetch post and comments
+  const post = useQuery(
+    api.posts.getPostById,
+    postId ? { postId: postId as Id<"posts"> } : "skip"
+  );
+  const comments = useQuery(
+    api.comments.getCommentsByPostId,
+    postId ? { postId: postId as Id<"posts"> } : "skip"
+  );
 
-  const handleSendComment = () => {
-    if (!comment.trim()) return;
-    // TODO: persist comment and update feed
-    setComment("");
+  const isOwnPost = user?._id === post?.authorId;
+
+  const handleSendComment = async () => {
+    if (!comment.trim() || !postId || isCreating) return;
+
+    const result = await createComment(postId as Id<"posts">, comment);
+    if (result) {
+      setComment("");
+    }
   };
+
+  // Loading state
+  if (post === undefined || comments === undefined) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+        <StatusBar style="light" />
+        <View style={styles.header}>
+          <Pressable
+            style={styles.headerButton}
+            hitSlop={10}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="chevron-back" size={22} color="#ffffff" />
+          </Pressable>
+          <Text style={styles.headerTitle}>Post</Text>
+          <View style={styles.headerButton} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#34c759" />
+          <Text style={styles.loadingText}>Loading post...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Post not found
+  if (!post) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+        <StatusBar style="light" />
+        <View style={styles.header}>
+          <Pressable
+            style={styles.headerButton}
+            hitSlop={10}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="chevron-back" size={22} color="#ffffff" />
+          </Pressable>
+          <Text style={styles.headerTitle}>Post</Text>
+          <View style={styles.headerButton} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <Ionicons name="alert-circle-outline" size={64} color="#3a3a3a" />
+          <Text style={styles.loadingText}>Post not found</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
@@ -90,37 +126,74 @@ export default function PostDetailsScreen() {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.header}>
-              <Pressable style={styles.headerButton} hitSlop={10} onPress={() => router.back()}>
+              <Pressable
+                style={styles.headerButton}
+                hitSlop={10}
+                onPress={() => router.back()}
+              >
                 <Ionicons name="chevron-back" size={22} color="#ffffff" />
               </Pressable>
               <Text style={styles.headerTitle}>Post</Text>
-              <Pressable style={styles.headerButton} hitSlop={10} onPress={() => {}}>
-                <Ionicons name="ellipsis-horizontal" size={20} color="#ffffff" />
+              <Pressable
+                style={styles.headerButton}
+                hitSlop={10}
+                onPress={() => {}}
+              >
+                <Ionicons
+                  name="ellipsis-horizontal"
+                  size={20}
+                  color="#ffffff"
+                />
               </Pressable>
             </View>
 
             <View style={styles.authorRow}>
-              <Image source={{ uri: POST.author.avatar }} style={styles.avatar} />
+              {post.author?.avatarUrl ? (
+                <Image
+                  source={{ uri: post.author.avatarUrl }}
+                  style={styles.avatar}
+                />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                  <Ionicons name="person" size={20} color="#8a8a8a" />
+                </View>
+              )}
               <View style={styles.authorMeta}>
-                <Text style={styles.authorName}>{POST.author.name}</Text>
-                <Text style={styles.timestamp}>{POST.timestamp}</Text>
+                <Text style={styles.authorName}>
+                  {post.author?.name || "Unknown User"}
+                </Text>
+                <Text style={styles.timestamp}>
+                  {formatTimestamp(post._creationTime)}
+                </Text>
               </View>
-              <Pressable style={styles.followButton} hitSlop={8}>
-                <Text style={styles.followText}>Follow</Text>
-              </Pressable>
+              {!isOwnPost && (
+                <Pressable style={styles.followButton} hitSlop={8}>
+                  <Text style={styles.followText}>Follow</Text>
+                </Pressable>
+              )}
             </View>
 
-            <Image source={{ uri: POST.image }} style={styles.postImage} contentFit="cover" />
+            {post.imageUrl && (
+              <Image
+                source={{ uri: post.imageUrl }}
+                style={styles.postImage}
+                contentFit="cover"
+              />
+            )}
 
             <View style={styles.statsRow}>
               <View style={styles.statsLeft}>
                 <Pressable style={styles.statButton} hitSlop={8}>
                   <Ionicons name="heart-outline" size={22} color="#ffffff" />
-                  <Text style={styles.statText}>{POST.likes}</Text>
+                  <Text style={styles.statText}>{post.likesCount}</Text>
                 </Pressable>
                 <Pressable style={styles.statButton} hitSlop={8}>
-                  <Ionicons name="chatbubble-outline" size={22} color="#ffffff" />
-                  <Text style={styles.statText}>{POST.comments}</Text>
+                  <Ionicons
+                    name="chatbubble-outline"
+                    size={22}
+                    color="#ffffff"
+                  />
+                  <Text style={styles.statText}>{post.commentsCount}</Text>
                 </Pressable>
               </View>
               <Pressable style={styles.saveButton} hitSlop={8}>
@@ -128,35 +201,82 @@ export default function PostDetailsScreen() {
               </Pressable>
             </View>
 
-            <Text style={styles.caption}>{POST.caption}</Text>
+            {post.caption && <Text style={styles.caption}>{post.caption}</Text>}
 
             <View style={styles.commentHeader}>
               <Text style={styles.commentTitle}>Comments</Text>
-              <Text style={styles.commentCount}>{comments.length} replies</Text>
+              <Text style={styles.commentCount}>
+                {comments?.length || 0}{" "}
+                {comments?.length === 1 ? "reply" : "replies"}
+              </Text>
             </View>
 
-            <View style={styles.commentList}>
-              {comments.map((item) => (
-                <View key={item.id} style={styles.commentCard}>
-                  <Image source={{ uri: item.author.avatar }} style={styles.commentAvatar} />
-                  <View style={styles.commentContent}>
-                    <View style={styles.commentHeaderRow}>
-                      <Text style={styles.commentAuthor}>{item.author.name}</Text>
-                      <Text style={styles.commentTimestamp}>{item.timestamp}</Text>
+            {comments && comments.length > 0 ? (
+              <View style={styles.commentList}>
+                {comments.map((item) => (
+                  <View key={item._id} style={styles.commentCard}>
+                    {item.author?.avatarUrl ? (
+                      <Image
+                        source={{ uri: item.author.avatarUrl }}
+                        style={styles.commentAvatar}
+                      />
+                    ) : (
+                      <View
+                        style={[
+                          styles.commentAvatar,
+                          styles.avatarPlaceholder,
+                        ]}
+                      >
+                        <Ionicons name="person" size={16} color="#8a8a8a" />
+                      </View>
+                    )}
+                    <View style={styles.commentContent}>
+                      <View style={styles.commentHeaderRow}>
+                        <Text style={styles.commentAuthor}>
+                          {item.author?.name || "Unknown User"}
+                        </Text>
+                        <Text style={styles.commentTimestamp}>
+                          {formatTimestamp(item._creationTime)}
+                        </Text>
+                      </View>
+                      <Text style={styles.commentText}>{item.text}</Text>
                     </View>
-                    <Text style={styles.commentText}>{item.text}</Text>
+                    <Pressable style={styles.commentAction} hitSlop={6}>
+                      <Ionicons
+                        name="heart-outline"
+                        size={18}
+                        color="#727272"
+                      />
+                    </Pressable>
                   </View>
-                  <Pressable style={styles.commentAction} hitSlop={6}>
-                    <Ionicons name="heart-outline" size={18} color="#727272" />
-                  </Pressable>
-                </View>
-              ))}
-            </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyComments}>
+                <Text style={styles.emptyCommentsText}>
+                  No comments yet. Be the first to comment!
+                </Text>
+              </View>
+            )}
           </ScrollView>
 
           <View style={styles.composerContainer}>
             <Pressable style={styles.composerAvatar}>
-              <Image source={{ uri: POST.author.avatar }} style={styles.composerAvatarImage} />
+              {user?.avatarUrl ? (
+                <Image
+                  source={{ uri: user.avatarUrl }}
+                  style={styles.composerAvatarImage}
+                />
+              ) : (
+                <View
+                  style={[
+                    styles.composerAvatarImage,
+                    styles.avatarPlaceholder,
+                  ]}
+                >
+                  <Ionicons name="person" size={16} color="#8a8a8a" />
+                </View>
+              )}
             </Pressable>
             <TextInput
               value={comment}
@@ -167,17 +287,23 @@ export default function PostDetailsScreen() {
               selectionColor="#ffffff"
               multiline
               maxLength={500}
+              editable={!isCreating}
             />
             <Pressable
               style={({ pressed }) => [
                 styles.sendButton,
-                (pressed || !comment.trim()) && styles.sendButtonDisabled,
+                (pressed || !comment.trim() || isCreating) &&
+                  styles.sendButtonDisabled,
               ]}
               onPress={handleSendComment}
-              disabled={!comment.trim()}
+              disabled={!comment.trim() || isCreating}
               hitSlop={8}
             >
-              <Ionicons name="send" size={18} color="#050505" />
+              {isCreating ? (
+                <ActivityIndicator size="small" color="#050505" />
+              ) : (
+                <Ionicons name="send" size={18} color="#050505" />
+              )}
             </Pressable>
           </View>
         </View>
@@ -231,6 +357,29 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
+  },
+  avatarPlaceholder: {
+    backgroundColor: "#1a1a1a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+  },
+  loadingText: {
+    color: "#8a8a8a",
+    fontSize: 16,
+  },
+  emptyComments: {
+    paddingVertical: 24,
+    alignItems: "center",
+  },
+  emptyCommentsText: {
+    color: "#8a8a8a",
+    fontSize: 14,
   },
   authorMeta: {
     flex: 1,

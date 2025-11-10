@@ -38,7 +38,11 @@ export default function HomeScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: NonNullable<typeof posts>[number] }) => {
-      const openPostDetails = () => router.push({ pathname: "/post-details" });
+      const openPostDetails = () =>
+        router.push({
+          pathname: "/post-details",
+          params: { postId: item._id },
+        });
       const isOwnPost = user?._id === item.authorId;
       const openAuthorProfile = () => {
         if (isOwnPost) {

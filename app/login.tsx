@@ -4,17 +4,17 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableWithoutFeedback,
-  View
+    ActivityIndicator,
+    Keyboard,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableWithoutFeedback,
+    View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -152,10 +152,6 @@ export default function LoginScreen() {
                   ) : null}
                 </View>
 
-                <Pressable style={styles.forgotButton} onPress={() => {}}>
-                  <Text style={styles.forgotText}>Forgot password?</Text>
-                </Pressable>
-
                 <Pressable
                   style={({ pressed }) => [
                     styles.loginButton,
@@ -269,14 +265,6 @@ const styles = StyleSheet.create({
     color: "#ff453a",
     fontSize: 14,
     textAlign: "center",
-  },
-  forgotButton: {
-    alignSelf: "flex-end",
-  },
-  forgotText: {
-    color: "#8ab4ff",
-    fontSize: 14,
-    fontWeight: "600",
   },
   loginButton: {
     backgroundColor: "#007aff",

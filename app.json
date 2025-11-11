@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "framez",
+    "name": "Framez",
     "slug": "framez",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -43,6 +43,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f157d10d-c45c-42d4-a0f1-4af9af683b9e"
+      }
     }
   }
 }
